@@ -12,6 +12,24 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("SimpleTopology");
 
+static void
+PacketTxTrace(Ptr<const Packet> packet)
+{
+    std::cout << Simulator::Now().GetSeconds()
+              << " TX "
+              << packet->GetSize()
+              << std::endl;
+}
+
+static void
+PacketRxTrace(Ptr<const Packet> packet)
+{
+    std::cout << Simulator::Now().GetSeconds()
+              << " RX "
+              << packet->GetSize()
+              << std::endl;
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -59,6 +77,16 @@ main(int argc, char* argv[])
     ApplicationContainer clientApps = echoClient.Install(nodes.Get(0));
     clientApps.Start(Seconds(2));
     clientApps.Stop(Seconds(10));
+
+    Config::ConnectWithoutContext(
+    "/NodeList/*/DeviceList/*/$ns3::PointToPointNetDevice/MacTx",
+    MakeCallback(&PacketTxTrace)
+    );
+
+    Config::ConnectWithoutContext(
+    "/NodeList/*/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
+    MakeCallback(&PacketRxTrace)
+    );
 
     Simulator::Stop(Seconds(11));
     Simulator::Run();

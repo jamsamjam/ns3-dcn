@@ -7,27 +7,34 @@
 #include "ns3/ipv4-global-routing-helper.h"
 #include "ns3/network-module.h"
 #include "ns3/point-to-point-module.h"
+#include <fstream>
+#include <json/json.h>
 
 using namespace ns3;
+using namespace Json;
 
 NS_LOG_COMPONENT_DEFINE("SimpleTopology");
+
+Value events(arrayValue); // same as events = Json::arrayValue;
 
 static void
 PacketTxTrace(Ptr<const Packet> packet)
 {
-    std::cout << Simulator::Now().GetSeconds()
-              << " TX "
-              << packet->GetSize()
-              << std::endl;
+    Value event;
+    event["time"] = Simulator::Now().GetSeconds();
+    event["type"] = "TX";
+    event["size"] = (int)packet->GetSize();
+    events.append(event);
 }
 
 static void
 PacketRxTrace(Ptr<const Packet> packet)
 {
-    std::cout << Simulator::Now().GetSeconds()
-              << " RX "
-              << packet->GetSize()
-              << std::endl;
+    Value event;
+    event["time"] = Simulator::Now().GetSeconds();
+    event["type"] = "RX";
+    event["size"] = (int)packet->GetSize();
+    events.append(event);
 }
 
 int
@@ -47,8 +54,10 @@ main(int argc, char* argv[])
     NodeContainer n1n2(nodes.Get(1), nodes.Get(2));
 
     PointToPointHelper pointToPoint;
-    pointToPoint.SetDeviceAttribute("DataRate", StringValue("1Gbps"));
-    pointToPoint.SetChannelAttribute("Delay", StringValue("2ms"));
+    std::string dataRate = "1Gbps";
+    std::string delay = "2ms";
+    pointToPoint.SetDeviceAttribute("DataRate", StringValue(dataRate));
+    pointToPoint.SetChannelAttribute("Delay", StringValue(delay));
 
     NetDeviceContainer d0d1 = pointToPoint.Install(n0n1);
     NetDeviceContainer d1d2 = pointToPoint.Install(n1n2);
@@ -90,6 +99,60 @@ main(int argc, char* argv[])
 
     Simulator::Stop(Seconds(11));
     Simulator::Run();
+    
+    Value root;
+    
+    Value topology;
+    Value jsonNodes(arrayValue);
+    
+    for (uint32_t i = 0; i < nodes.GetN(); i++)
+    {
+        Value node;
+        node["id"] = i;
+        
+        if (i == 0)
+            node["name"] = "Client";
+        else if (i == nodes.GetN() - 1)
+            node["name"] = "Server";
+        else
+            node["name"] = "Router";
+        
+        node["x"] = 100 + (i * 200);
+        node["y"] = 200;
+        
+        jsonNodes.append(node);
+    }
+    
+    topology["nodes"] = jsonNodes;
+    
+    Value links(arrayValue);
+    
+    for (uint32_t i = 0; i < nodes.GetN() - 1; i++)
+    {
+        Value link;
+        link["source"] = i;
+        link["target"] = i + 1;
+        link["dataRate"] = dataRate;
+        link["delay"] = delay;
+        links.append(link);
+    }
+    
+    topology["links"] = links;
+    root["topology"] = topology;
+    root["events"] = events;
+    
+    StreamWriterBuilder builder;
+    builder["commentStyle"] = "None";
+    builder["indentation"] = "  ";
+    
+    std::ofstream jsonFile("../backend/output/simple.json");
+    std::unique_ptr<StreamWriter> writer(
+        builder.newStreamWriter());
+    writer->write(root, &jsonFile);
+    jsonFile.close();
+    
+    std::cout << "Simulation results saved to json" << std::endl;
+    
     Simulator::Destroy();
     return 0;
 }

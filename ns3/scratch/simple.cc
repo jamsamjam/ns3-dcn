@@ -42,7 +42,7 @@ LogEvent(std::string context, Ptr<const Packet> packet, std::string type)
     
     Ptr<Node> node = NodeList::GetNode(nodeId);
     Ptr<NetDevice> device = node->GetDevice(deviceId);
-    uint32_t linkId = deviceToLink[device];
+    uint32_t linkId = deviceToLink.at(device);
     
     Value event;
     event["time"] = Simulator::Now().GetSeconds();

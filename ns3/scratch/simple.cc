@@ -15,26 +15,56 @@ using namespace Json;
 
 NS_LOG_COMPONENT_DEFINE("SimpleTopology");
 
-Value events(arrayValue); // same as events = Json::arrayValue;
+Value events(arrayValue);
+std::map<Ptr<NetDevice>, uint32_t> deviceToLink;
 
 static void
-PacketTxTrace(Ptr<const Packet> packet)
+LogEvent(std::string context, Ptr<const Packet> packet, std::string type)
 {
+    uint32_t nodeId = 0;
+    uint32_t deviceId = 0;
+    
+    size_t nodePos = context.find("/NodeList/");
+    if (nodePos != std::string::npos)
+    {
+        size_t start = nodePos + 10;
+        size_t end = context.find("/", start);
+        nodeId = std::stoi(context.substr(start, end - start));
+    }
+    
+    size_t devPos = context.find("/DeviceList/");
+    if (devPos != std::string::npos)
+    {
+        size_t start = devPos + 12;
+        size_t end = context.find("/", start);
+        deviceId = std::stoi(context.substr(start, end - start));
+    }
+    
+    Ptr<Node> node = NodeList::GetNode(nodeId);
+    Ptr<NetDevice> device = node->GetDevice(deviceId);
+    uint32_t linkId = deviceToLink[device];
+    
     Value event;
     event["time"] = Simulator::Now().GetSeconds();
-    event["type"] = "TX";
-    event["size"] = (int)packet->GetSize();
+    event["type"] = type;
+    event["nodeId"] = nodeId;
+    event["linkId"] = linkId;
+    event["packetId"] = packet->GetUid();
+    event["size"] = packet->GetSize();
     events.append(event);
 }
 
 static void
-PacketRxTrace(Ptr<const Packet> packet)
+PacketTxTrace(std::string context, Ptr<const Packet> packet)
 {
-    Value event;
-    event["time"] = Simulator::Now().GetSeconds();
-    event["type"] = "RX";
-    event["size"] = (int)packet->GetSize();
-    events.append(event);
+    // std::cout << context << std::endl;
+    LogEvent(context, packet, "TX");
+}
+
+static void
+PacketRxTrace(std::string context, Ptr<const Packet> packet)
+{
+    LogEvent(context, packet, "RX");
 }
 
 int
@@ -61,6 +91,11 @@ main(int argc, char* argv[])
 
     NetDeviceContainer d0d1 = pointToPoint.Install(n0n1);
     NetDeviceContainer d1d2 = pointToPoint.Install(n1n2);
+    
+    deviceToLink[d0d1.Get(0)] = 0;
+    deviceToLink[d0d1.Get(1)] = 0;
+    deviceToLink[d1d2.Get(0)] = 1;
+    deviceToLink[d1d2.Get(1)] = 1;
 
     InternetStackHelper stack; 
     stack.Install(nodes);
@@ -87,12 +122,12 @@ main(int argc, char* argv[])
     clientApps.Start(Seconds(2));
     clientApps.Stop(Seconds(10));
 
-    Config::ConnectWithoutContext(
+    Config::Connect(
     "/NodeList/*/DeviceList/*/$ns3::PointToPointNetDevice/MacTx",
     MakeCallback(&PacketTxTrace)
     );
 
-    Config::ConnectWithoutContext(
+    Config::Connect(
     "/NodeList/*/DeviceList/*/$ns3::PointToPointNetDevice/MacRx",
     MakeCallback(&PacketRxTrace)
     );
@@ -130,6 +165,7 @@ main(int argc, char* argv[])
     for (uint32_t i = 0; i < nodes.GetN() - 1; i++)
     {
         Value link;
+        link["id"] = i;
         link["source"] = i;
         link["target"] = i + 1;
         link["dataRate"] = dataRate;

@@ -13,12 +13,7 @@
 #include "ns3/tcp-l4-protocol.h"
 // https://www.nsnam.org/docs/release/3.27/doxygen/group__traffic-control.html
 #include <fstream>
-<<<<<<< HEAD
 #include <jsoncpp/json/json.h>
-=======
-#include <json/json.h>
-#include <iomanip>
->>>>>>> bace9f5 (ns3: update with tcp)
 
 using namespace ns3;
 using namespace Json;

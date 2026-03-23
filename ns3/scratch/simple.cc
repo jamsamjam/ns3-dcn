@@ -41,9 +41,9 @@ QueueLenTrace(uint32_t oldValue, uint32_t newValue)
     event["type"] = "QUEUE_LEN_CHANGE";
     event["oldPackets"] = oldValue;
     event["newPackets"] = newValue;
-    event["linkId"] = 1; // bottleneck link
+    event["linkId"] = 1;
     events.append(event);
-    
+
     queueMetrics.maxQueueSize = std::max(queueMetrics.maxQueueSize, newValue);
     if (newValue > oldValue)
     {
@@ -60,14 +60,16 @@ SojournTrace(Time t)
     event["delayMs"] = t.GetMilliSeconds();
     event["linkId"] = 1;
     events.append(event);
-    
+
     queueMetrics.totalSojournTime += t.GetMilliSeconds();
     queueMetrics.sojournSampleCount++;
 }
 
 static void
-DropTrace(Ptr<const Packet> packet)
+DropTrace(Ptr<const QueueDiscItem> item)
 {
+    Ptr<const Packet> packet = item->GetPacket();
+
     Value event;
     event["time"] = Simulator::Now().GetSeconds();
     event["type"] = "PACKET_DROP";
@@ -75,7 +77,7 @@ DropTrace(Ptr<const Packet> packet)
     event["size"] = packet->GetSize();
     event["linkId"] = 1;
     events.append(event);
-    
+
     queueMetrics.packetsLost++;
 }
 
@@ -159,27 +161,25 @@ main(int argc, char* argv[])
     sendApps.Stop(Seconds(simTime));
 
     // Trace queue length changes (number of packets)
-    bool retval = qdisc->TraceConnect("BytesInQueue",
-                                       std::string(""),
-                                       MakeCallback(&QueueLenTrace));
+    bool retval = qdisc->TraceConnectWithoutContext("PacketsInQueue",
+                                MakeCallback(&QueueLenTrace));
+
     if (!retval)
     {
-        std::cerr << "Warning: Could not connect BytesInQueue trace" << std::endl;
+        std::cerr << "Warning: Could not connect PacketsInQueue trace" << std::endl;
     }
 
     // Trace sojourn time (time packets spend in queue)
-    retval = qdisc->TraceConnect("SojournTime",
-                                  std::string(""),
-                                  MakeCallback(&SojournTrace));
+    retval = qdisc->TraceConnectWithoutContext("SojournTime",
+                                MakeCallback(&SojournTrace));
     if (!retval)
     {
         std::cerr << "Warning: Could not connect SojournTime trace" << std::endl;
     }
 
     // Trace dropped packets
-    retval = qdisc->TraceConnect("Drop",
-                                  std::string(""),
-                                  MakeCallback(&DropTrace));
+    retval = qdisc->TraceConnectWithoutContext("Drop",
+                                MakeCallback(&DropTrace));
     if (!retval)
     {
         std::cerr << "Warning: Could not connect Drop trace" << std::endl;

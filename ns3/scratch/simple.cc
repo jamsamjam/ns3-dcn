@@ -1,7 +1,6 @@
 // n0 -------------- n1 -------------- n2
 //    point-to-point    point-to-point
 //                      bottle-neck (!)
-// TCP Data Center Scenario with Queue Analysis
 
 #include "ns3/applications-module.h"
 #include "ns3/core-module.h"
@@ -14,8 +13,6 @@
 // https://www.nsnam.org/docs/release/3.27/doxygen/group__traffic-control.html
 #include <fstream>
 #include <jsoncpp/json/json.h>
-#include <iomanip>
-#include <memory>
 
 using namespace ns3;
 using namespace Json;
@@ -23,17 +20,21 @@ using namespace Json;
 NS_LOG_COMPONENT_DEFINE("SimpleTopology");
 
 Value events(arrayValue);
-std::map<Ptr<NetDevice>, uint32_t> deviceToLink;
+//std::map<Ptr<NetDevice>, uint32_t> deviceToLink;
 uint16_t port = 9;
 
 struct QueueMetrics
 {
     uint32_t maxQueueSize = 0;
     uint32_t packetsLost = 0;
-    uint32_t packetsQueued = 0;
-    double totalSojournTime = 0.0;
+    uint32_t packetsQueued = 0; // accumulated count of packets that entered the queue
+    double totalSojournTime = 0.0; // total time packets spent in queue (ms) - sojourn: temporary stay
     uint32_t sojournSampleCount = 0;
 } queueMetrics;
+
+// https://www.nsnam.org/docs/manual/html/tracing.html
+// trace source -> trace sink (callback function)
+// called whenever an event occurs that we want to trace
 
 static void
 QueueLenTrace(uint32_t oldValue, uint32_t newValue)
@@ -49,7 +50,7 @@ QueueLenTrace(uint32_t oldValue, uint32_t newValue)
     queueMetrics.maxQueueSize = std::max(queueMetrics.maxQueueSize, newValue);
     if (newValue > oldValue)
     {
-        queueMetrics.packetsQueued += (newValue - oldValue);
+        queueMetrics.packetsQueued += (newValue - oldValue); // TODO
     }
 }
 
@@ -64,7 +65,7 @@ SojournTrace(Time t)
     events.append(event);
 
     queueMetrics.totalSojournTime += t.GetMilliSeconds();
-    queueMetrics.sojournSampleCount++;
+    queueMetrics.sojournSampleCount++; // to calculate average
 }
 
 static void
@@ -76,12 +77,12 @@ DropTrace(Ptr<const QueueDiscItem> item)
     event["time"] = Simulator::Now().GetSeconds();
     event["type"] = "PACKET_DROP";
     event["packetId"] = packet->GetUid();
-    event["size"] = packet->GetSize();
+    event["size"] = packet->GetSize(); // in bytes
     event["linkId"] = 1;
     events.append(event);
 
     queueMetrics.packetsLost++;
-}
+}§
 
 int
 main(int argc, char* argv[])
@@ -91,6 +92,7 @@ main(int argc, char* argv[])
     std::string outputFilename = "../frontend/public/simple.json";
     double simTime = 10.0;
     
+    // e.g. ./ns3 run "scratch/<file> --queueSize=50p --rate=8Mbps --time=20"
     CommandLine cmd(__FILE__);
     cmd.AddValue("queueSize", "Queue size (e.g., 100p, 1000p)", queueSizeStr);
     cmd.AddValue("rate", "Sending rate (e.g., 1Mbps, 5Mbps)", sendingRateStr);
@@ -147,7 +149,7 @@ main(int argc, char* argv[])
                                 InetSocketAddress(Ipv4Address::GetAny(), port));
     ApplicationContainer sinkApps = sinkHelper.Install(nodes.Get(2));
     sinkApps.Start(Seconds(0.0));
-    sinkApps.Stop(Seconds(simTime + 1.0));
+    sinkApps.Stop(Seconds(simTime + 1.0)); // to allow processing of last packets
 
     // OnOffHelper: sends at constant rate when on, idle when off
     OnOffHelper onoffHelper("ns3::TcpSocketFactory",
@@ -156,13 +158,12 @@ main(int argc, char* argv[])
     // Set constant sending rate and packet size
     onoffHelper.SetConstantRate(DataRate(sendingRateStr), 1024);
     onoffHelper.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=10.0]"));
-    onoffHelper.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
+    onoffHelper.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]")); // x off
     
     ApplicationContainer sendApps = onoffHelper.Install(nodes.Get(0));
     sendApps.Start(Seconds(1.0));
     sendApps.Stop(Seconds(simTime));
 
-    // Trace queue length changes (number of packets)
     bool retval = qdisc->TraceConnectWithoutContext("PacketsInQueue",
                                 MakeCallback(&QueueLenTrace));
 
@@ -171,15 +172,14 @@ main(int argc, char* argv[])
         std::cerr << "Warning: Could not connect PacketsInQueue trace" << std::endl;
     }
 
-    // Trace sojourn time (time packets spend in queue)
     retval = qdisc->TraceConnectWithoutContext("SojournTime",
                                 MakeCallback(&SojournTrace));
+    // calculated at the moment when a packet dequeued at queue disc
     if (!retval)
     {
         std::cerr << "Warning: Could not connect SojournTime trace" << std::endl;
     }
 
-    // Trace dropped packets
     retval = qdisc->TraceConnectWithoutContext("Drop",
                                 MakeCallback(&DropTrace));
     if (!retval)
@@ -190,8 +190,7 @@ main(int argc, char* argv[])
     Simulator::Stop(Seconds(simTime + 1));
     Simulator::Run();
     
-    // ---------- output results
-
+    // more outputs
     Value output;
     output["topology"] = "simple";
     output["queueSize"] = queueSizeStr;
@@ -214,7 +213,7 @@ main(int argc, char* argv[])
     if (outfile.is_open())
     {
         FastWriter writer;
-	outfile << writer.write(output);
+	    outfile << writer.write(output);
         outfile.close();
         NS_LOG_INFO("Trace saved to: " << outputFilename);
     }

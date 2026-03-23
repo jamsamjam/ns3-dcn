@@ -13,8 +13,9 @@
 #include "ns3/tcp-l4-protocol.h"
 // https://www.nsnam.org/docs/release/3.27/doxygen/group__traffic-control.html
 #include <fstream>
-#include <json/json.h>
+#include <jsoncpp/json/json.h>
 #include <iomanip>
+#include <memory>
 
 using namespace ns3;
 using namespace Json;
@@ -85,12 +86,14 @@ main(int argc, char* argv[])
 {
     std::string queueSizeStr = "100p";  // queue size in packets
     std::string sendingRateStr = "5Mbps"; // application sending rate
+    std::string outputFilename = "../frontend/public/simple.json";
     double simTime = 10.0;
     
     CommandLine cmd(__FILE__);
     cmd.AddValue("queueSize", "Queue size (e.g., 100p, 1000p)", queueSizeStr);
     cmd.AddValue("rate", "Sending rate (e.g., 1Mbps, 5Mbps)", sendingRateStr);
     cmd.AddValue("time", "Simulation time in seconds", simTime);
+    cmd.AddValue("output", "Output JSON path", outputFilename);
     cmd.Parse(argc, argv);
 
     Time::SetResolution(Time::NS);
@@ -189,7 +192,6 @@ main(int argc, char* argv[])
     
     // ---------- output results
 
-    std::string outputFilename = "ns3-queue-trace.json";
     Value output;
     output["topology"] = "simple";
     output["queueSize"] = queueSizeStr;
@@ -211,8 +213,8 @@ main(int argc, char* argv[])
     std::ofstream outfile(outputFilename);
     if (outfile.is_open())
     {
-        StreamWriterBuilder writer;
-        outfile << writer.write(output);
+        FastWriter writer;
+	outfile << writer.write(output);
         outfile.close();
         NS_LOG_INFO("Trace saved to: " << outputFilename);
     }

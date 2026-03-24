@@ -20,7 +20,6 @@ using namespace Json;
 NS_LOG_COMPONENT_DEFINE("SimpleTopology");
 
 Value events(arrayValue);
-//std::map<Ptr<NetDevice>, uint32_t> deviceToLink;
 uint16_t port = 9;
 
 struct QueueMetrics
@@ -117,11 +116,6 @@ main(int argc, char* argv[])
 
     NetDeviceContainer d0d1 = fastLink.Install(n0n1);
     NetDeviceContainer d1d2 = slowLink.Install(n1n2);
-    
-    deviceToLink[d0d1.Get(0)] = 0;
-    deviceToLink[d0d1.Get(1)] = 0;
-    deviceToLink[d1d2.Get(0)] = 1;
-    deviceToLink[d1d2.Get(1)] = 1;
 
     InternetStackHelper stack; 
     stack.Install(nodes);

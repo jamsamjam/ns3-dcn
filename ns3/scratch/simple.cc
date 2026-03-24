@@ -44,7 +44,6 @@ QueueLenTrace(uint32_t oldValue, uint32_t newValue)
     event["type"] = "QUEUE_LEN_CHANGE";
     event["oldPackets"] = oldValue;
     event["newPackets"] = newValue;
-    event["linkId"] = linkId;
     events.append(event);
 
     queueMetrics.maxQueueSize = std::max(queueMetrics.maxQueueSize, newValue);
@@ -61,7 +60,6 @@ SojournTrace(Time t)
     event["time"] = Simulator::Now().GetSeconds();
     event["type"] = "SOJOURN_TIME";
     event["delayMs"] = t.GetMilliSeconds();
-    event["linkId"] = linkId;
     events.append(event);
 
     queueMetrics.totalSojournTime += t.GetMilliSeconds();
@@ -78,7 +76,6 @@ DropTrace(Ptr<const QueueDiscItem> item)
     event["type"] = "PACKET_DROP";
     event["packetId"] = packet->GetUid();
     event["size"] = packet->GetSize(); // in bytes
-    event["linkId"] = linkId;
     events.append(event);
 
     queueMetrics.packetsLost++;
@@ -135,7 +132,7 @@ main(int argc, char* argv[])
                          "MaxSize", StringValue(queueSizeStr));
 
     QueueDiscContainer qdiscs = tch.Install(d1d2);
-    Ptr<QueueDisc> qdisc0 = qdiscs.Get(0); // TODO: assume it's n1->n2
+    Ptr<QueueDisc> qdisc = qdiscs.Get(0); // TODO: assume it's n1->n2
 
     Ipv4AddressHelper address;
     address.SetBase("10.1.1.0", "255.255.255.0");

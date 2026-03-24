@@ -28,7 +28,7 @@ struct QueueMetrics
     uint32_t maxQueueSize = 0;
     uint32_t packetsLost = 0;
     uint32_t packetsQueued = 0; // accumulated count of packets that entered the queue
-    double totalSojournTime = 0.0; // total time packets spent in queue (ms) - sojourn: temporary stay
+    double totalSojournTime = 0.0; // total time packets spent in queue (ms); dequeue - enqueue; sojourn = temporary stay
     uint32_t sojournSampleCount = 0;
 } queueMetrics;
 
@@ -44,13 +44,13 @@ QueueLenTrace(uint32_t oldValue, uint32_t newValue)
     event["type"] = "QUEUE_LEN_CHANGE";
     event["oldPackets"] = oldValue;
     event["newPackets"] = newValue;
-    event["linkId"] = 1;
+    event["linkId"] = linkId;
     events.append(event);
 
     queueMetrics.maxQueueSize = std::max(queueMetrics.maxQueueSize, newValue);
     if (newValue > oldValue)
     {
-        queueMetrics.packetsQueued += (newValue - oldValue); // TODO
+        queueMetrics.packetsQueued += (newValue - oldValue);
     }
 }
 
@@ -61,7 +61,7 @@ SojournTrace(Time t)
     event["time"] = Simulator::Now().GetSeconds();
     event["type"] = "SOJOURN_TIME";
     event["delayMs"] = t.GetMilliSeconds();
-    event["linkId"] = 1;
+    event["linkId"] = linkId;
     events.append(event);
 
     queueMetrics.totalSojournTime += t.GetMilliSeconds();
@@ -78,11 +78,11 @@ DropTrace(Ptr<const QueueDiscItem> item)
     event["type"] = "PACKET_DROP";
     event["packetId"] = packet->GetUid();
     event["size"] = packet->GetSize(); // in bytes
-    event["linkId"] = 1;
+    event["linkId"] = linkId;
     events.append(event);
 
     queueMetrics.packetsLost++;
-}§
+}
 
 int
 main(int argc, char* argv[])
@@ -135,7 +135,7 @@ main(int argc, char* argv[])
                          "MaxSize", StringValue(queueSizeStr));
 
     QueueDiscContainer qdiscs = tch.Install(d1d2);
-    Ptr<QueueDisc> qdisc = qdiscs.Get(0); // get the queue disc at n1->n2
+    Ptr<QueueDisc> qdisc0 = qdiscs.Get(0); // TODO: assume it's n1->n2
 
     Ipv4AddressHelper address;
     address.SetBase("10.1.1.0", "255.255.255.0");

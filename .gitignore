@@ -1,5 +1,6 @@
 .DS_Store
 .vscode/
+note.md
 
 # ns-3
 *.o

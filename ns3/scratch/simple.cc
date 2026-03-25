@@ -31,6 +31,15 @@ struct QueueMetrics
     uint32_t sojournSampleCount = 0;
 } queueMetrics;
 
+struct LinkInfo
+{
+    int fromNode;
+    int toNode;
+    std::string rate;
+    std::string delay;
+    std::string label; // "fast", "bottleneck", ""
+};
+
 // https://www.nsnam.org/docs/manual/html/tracing.html
 // trace source -> trace sink (callback function)
 // called whenever an event occurs that we want to trace
@@ -106,13 +115,18 @@ main(int argc, char* argv[])
     NodeContainer n0n1(nodes.Get(0), nodes.Get(1));
     NodeContainer n1n2(nodes.Get(1), nodes.Get(2));
 
+    std::vector<LinkInfo> linkInfos = {
+        {0, 1, "10Mbps", "10ms", "fast"},
+        {1, 2, "1Mbps", "50ms", "bottleneck"},
+    };
+
     PointToPointHelper fastLink;
     PointToPointHelper slowLink;
 
-    fastLink.SetDeviceAttribute("DataRate", StringValue("10Mbps"));
-    fastLink.SetChannelAttribute("Delay", StringValue("10ms"));
-    slowLink.SetDeviceAttribute("DataRate", StringValue("1Mbps"));
-    slowLink.SetChannelAttribute("Delay", StringValue("50ms"));
+    fastLink.SetDeviceAttribute("DataRate", StringValue(linkInfos[0].rate));
+    fastLink.SetChannelAttribute("Delay", StringValue(linkInfos[0].delay));
+    slowLink.SetDeviceAttribute("DataRate", StringValue(linkInfos[1].rate));
+    slowLink.SetChannelAttribute("Delay", StringValue(linkInfos[1].delay));
 
     NetDeviceContainer d0d1 = fastLink.Install(n0n1);
     NetDeviceContainer d1d2 = slowLink.Install(n1n2);
@@ -126,7 +140,7 @@ main(int argc, char* argv[])
                          "MaxSize", StringValue(queueSizeStr));
 
     QueueDiscContainer qdiscs = tch.Install(d1d2);
-    Ptr<QueueDisc> qdisc = qdiscs.Get(0); // TODO: assume it's n1->n2
+    Ptr<QueueDisc> qdisc = qdiscs.Get(0); // TODO: assume bottlenek is n1->n2
 
     Ipv4AddressHelper address;
     address.SetBase("10.1.1.0", "255.255.255.0");
@@ -187,10 +201,21 @@ main(int argc, char* argv[])
     output["queueSize"] = queueSizeStr;
     output["sendingRate"] = sendingRateStr;
     output["simTime"] = simTime;
-    output["linkRate_fast"] = "10Mbps";
-    output["linkRate_bottleneck"] = "1Mbps";
     output["events"] = events;
-    
+
+    Value linksArray(arrayValue);
+    for (const auto& link : linkInfos)
+    {
+        Value l;
+        l["from"] = link.fromNode;
+        l["to"] = link.toNode;
+        l["rate"] = link.rate;
+        l["delay"] = link.delay;
+        l["label"] = link.label;
+        linksArray.append(l);
+    }
+    output["links"] = linksArray;
+
     Value metrics;
     metrics["maxQueueSize"] = queueMetrics.maxQueueSize;
     metrics["packetsLost"] = queueMetrics.packetsLost;

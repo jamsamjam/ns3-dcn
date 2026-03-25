@@ -241,18 +241,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.2678544009999999,
+            "time": 1.2678544010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.2678544009999999,
+            "time": 1.2678544010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.2678544009999999,
+            "time": 1.2678544010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -292,35 +292,35 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.2769104010000001,
+            "time": 1.2769104009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.2769104010000001,
+            "time": 1.2769104009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.2769104010000001,
+            "time": 1.2769104009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.2773824009999999,
+            "time": 1.2773824010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.2773824009999999,
+            "time": 1.2773824010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.2773824009999999,
+            "time": 1.2773824010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -666,35 +666,35 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.4042896010000001,
+            "time": 1.4042896009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.4042896010000001,
+            "time": 1.4042896009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.4042896010000001,
+            "time": 1.4042896009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.4047616009999999,
+            "time": 1.4047616010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.4047616009999999,
+            "time": 1.4047616010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.4047616009999999,
+            "time": 1.4047616010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -785,35 +785,35 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.4226976010000001,
+            "time": 1.4226976009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.4226976010000001,
+            "time": 1.4226976009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.4226976010000001,
+            "time": 1.4226976009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.4231696009999999,
+            "time": 1.4231696010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.4231696009999999,
+            "time": 1.4231696010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.4231696009999999,
+            "time": 1.4231696010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -1057,35 +1057,35 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.4604576010000001,
+            "time": 1.4604576009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.4604576010000001,
+            "time": 1.4604576009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.4604576010000001,
+            "time": 1.4604576009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.4609296009999999,
+            "time": 1.4609296010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.4609296009999999,
+            "time": 1.4609296010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.4609296009999999,
+            "time": 1.4609296010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -1210,18 +1210,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.5252368009999999,
+            "time": 1.5252368010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.5252368009999999,
+            "time": 1.5252368010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.5252368009999999,
+            "time": 1.5252368010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -1312,35 +1312,35 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.5431728010000001,
+            "time": 1.5431728009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.5431728010000001,
+            "time": 1.5431728009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.5431728010000001,
+            "time": 1.5431728009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.5436448009999999,
+            "time": 1.5436448010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.5436448009999999,
+            "time": 1.5436448010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.5436448009999999,
+            "time": 1.5436448010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -1431,18 +1431,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.5540288010000001,
+            "time": 1.5540288009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.5540288010000001,
+            "time": 1.5540288009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.5540288010000001,
+            "time": 1.5540288009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -1482,18 +1482,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.5629968009999999,
+            "time": 1.5629968010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.5629968009999999,
+            "time": 1.5629968010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.5629968009999999,
+            "time": 1.5629968010000002,
             "type": "SOJOURN_TIME"
         },
         {
@@ -1584,35 +1584,35 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.5809328010000001,
+            "time": 1.5809328009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.5809328010000001,
+            "time": 1.5809328009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.5809328010000001,
+            "time": 1.5809328009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.5814048009999999,
+            "time": 1.5814048010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.5814048009999999,
+            "time": 1.5814048010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.5814048009999999,
+            "time": 1.5814048010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -1703,35 +1703,35 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.5917888010000001,
+            "time": 1.5917888009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.5917888010000001,
+            "time": 1.5917888009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.5917888010000001,
+            "time": 1.5917888009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.5998128009999999,
+            "time": 1.5998128010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.5998128009999999,
+            "time": 1.5998128010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.5998128009999999,
+            "time": 1.5998128010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -1822,18 +1822,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.6101968010000001,
+            "time": 1.6101968009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.6101968010000001,
+            "time": 1.6101968009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.6101968010000001,
+            "time": 1.6101968009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -1873,18 +1873,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.6191648009999999,
+            "time": 1.6191648010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.6191648009999999,
+            "time": 1.6191648010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.6191648009999999,
+            "time": 1.6191648010000002,
             "type": "SOJOURN_TIME"
         },
         {
@@ -1975,35 +1975,35 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.6295488010000001,
+            "time": 1.6295488009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.6295488010000001,
+            "time": 1.6295488009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.6295488010000001,
+            "time": 1.6295488009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.6375728009999999,
+            "time": 1.6375728010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.6375728009999999,
+            "time": 1.6375728010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.6375728009999999,
+            "time": 1.6375728010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -2094,18 +2094,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.6479568010000001,
+            "time": 1.6479568009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.6479568010000001,
+            "time": 1.6479568009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.6479568010000001,
+            "time": 1.6479568009999999,
             "type": "SOJOURN_TIME"
         },
         {
@@ -2213,18 +2213,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.6663648010000001,
+            "time": 1.6663648009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.6663648010000001,
+            "time": 1.6663648009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.6663648010000001,
+            "time": 1.6663648009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -2264,18 +2264,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.6753328009999999,
+            "time": 1.6753328010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.6753328009999999,
+            "time": 1.6753328010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.6753328009999999,
+            "time": 1.6753328010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -2366,35 +2366,35 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.6857168010000001,
+            "time": 1.6857168009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.6857168010000001,
+            "time": 1.6857168009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.6857168010000001,
+            "time": 1.6857168009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.6861888009999999,
+            "time": 1.6861888010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.6861888009999999,
+            "time": 1.6861888010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.6861888009999999,
+            "time": 1.6861888010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -2485,18 +2485,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.7041248010000001,
+            "time": 1.7041248009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.7041248010000001,
+            "time": 1.7041248009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.7041248010000001,
+            "time": 1.7041248009999999,
             "type": "SOJOURN_TIME"
         },
         {
@@ -2536,18 +2536,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.7130928009999999,
+            "time": 1.7130928010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.7130928009999999,
+            "time": 1.7130928010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.7130928009999999,
+            "time": 1.7130928010000002,
             "type": "SOJOURN_TIME"
         },
         {
@@ -2604,18 +2604,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.7225328010000001,
+            "time": 1.7225328009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.7225328010000001,
+            "time": 1.7225328009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.7225328010000001,
+            "time": 1.7225328009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -2655,18 +2655,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.7239488009999999,
+            "time": 1.7239488010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.7239488009999999,
+            "time": 1.7239488010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.7239488009999999,
+            "time": 1.7239488010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -2757,35 +2757,35 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.7418848010000001,
+            "time": 1.7418848009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.7418848010000001,
+            "time": 1.7418848009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.7418848010000001,
+            "time": 1.7418848009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.7423568009999999,
+            "time": 1.7423568010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.7423568009999999,
+            "time": 1.7423568010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.7423568009999999,
+            "time": 1.7423568010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -2876,18 +2876,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.7602928010000001,
+            "time": 1.7602928009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.7602928010000001,
+            "time": 1.7602928009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.7602928010000001,
+            "time": 1.7602928009999999,
             "type": "SOJOURN_TIME"
         },
         {
@@ -2927,18 +2927,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.7617088009999999,
+            "time": 1.7617088010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.7617088009999999,
+            "time": 1.7617088010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.7617088009999999,
+            "time": 1.7617088010000002,
             "type": "SOJOURN_TIME"
         },
         {
@@ -3029,35 +3029,35 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.7796448010000001,
+            "time": 1.7796448009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.7796448010000001,
+            "time": 1.7796448009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.7796448010000001,
+            "time": 1.7796448009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.7801168009999999,
+            "time": 1.7801168010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.7801168009999999,
+            "time": 1.7801168010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.7801168009999999,
+            "time": 1.7801168010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -3148,35 +3148,35 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.7980528010000001,
+            "time": 1.7980528009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.7980528010000001,
+            "time": 1.7980528009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.7980528010000001,
+            "time": 1.7980528009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.7985248009999999,
+            "time": 1.7985248010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.7985248009999999,
+            "time": 1.7985248010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.7985248009999999,
+            "time": 1.7985248010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -3267,18 +3267,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.8089088010000001,
+            "time": 1.8089088009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.8089088010000001,
+            "time": 1.8089088009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.8089088010000001,
+            "time": 1.8089088009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -3318,18 +3318,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.8178768009999999,
+            "time": 1.8178768010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.8178768009999999,
+            "time": 1.8178768010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.8178768009999999,
+            "time": 1.8178768010000002,
             "type": "SOJOURN_TIME"
         },
         {
@@ -3420,35 +3420,35 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.8358128010000001,
+            "time": 1.8358128009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.8358128010000001,
+            "time": 1.8358128009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.8358128010000001,
+            "time": 1.8358128009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.8362848009999999,
+            "time": 1.8362848010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.8362848009999999,
+            "time": 1.8362848010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.8362848009999999,
+            "time": 1.8362848010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -3539,35 +3539,35 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.8466688010000001,
+            "time": 1.8466688009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.8466688010000001,
+            "time": 1.8466688009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.8466688010000001,
+            "time": 1.8466688009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.8546928009999999,
+            "time": 1.8546928010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.8546928009999999,
+            "time": 1.8546928010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.8546928009999999,
+            "time": 1.8546928010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -3658,18 +3658,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.8650768010000001,
+            "time": 1.8650768009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.8650768010000001,
+            "time": 1.8650768009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.8650768010000001,
+            "time": 1.8650768009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -3709,18 +3709,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.8740448009999999,
+            "time": 1.8740448010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.8740448009999999,
+            "time": 1.8740448010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.8740448009999999,
+            "time": 1.8740448010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -3811,35 +3811,35 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.8844288010000001,
+            "time": 1.8844288009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.8844288010000001,
+            "time": 1.8844288009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.8844288010000001,
+            "time": 1.8844288009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.8924528009999999,
+            "time": 1.8924528010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.8924528009999999,
+            "time": 1.8924528010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.8924528009999999,
+            "time": 1.8924528010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -3930,18 +3930,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.9028368010000001,
+            "time": 1.9028368009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.9028368010000001,
+            "time": 1.9028368009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.9028368010000001,
+            "time": 1.9028368009999999,
             "type": "SOJOURN_TIME"
         },
         {
@@ -3981,18 +3981,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.9118048009999999,
+            "time": 1.9118048010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.9118048009999999,
+            "time": 1.9118048010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.9118048009999999,
+            "time": 1.9118048010000002,
             "type": "SOJOURN_TIME"
         },
         {
@@ -4049,18 +4049,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.9212448010000001,
+            "time": 1.9212448009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.9212448010000001,
+            "time": 1.9212448009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.9212448010000001,
+            "time": 1.9212448009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -4100,18 +4100,18 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.9302128009999999,
+            "time": 1.9302128010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 0,
             "oldPackets": 1,
-            "time": 1.9302128009999999,
+            "time": 1.9302128010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 0,
-            "time": 1.9302128009999999,
+            "time": 1.9302128010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -4202,13 +4202,13 @@
         {
             "newPackets": 1,
             "oldPackets": 0,
-            "time": 1.9405968010000001,
+            "time": 1.9405968009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 2,
             "oldPackets": 1,
-            "time": 1.9410688009999999,
+            "time": 1.9410688010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -4260,23 +4260,23 @@
         {
             "newPackets": 3,
             "oldPackets": 4,
-            "time": 1.9508656010000001,
+            "time": 1.9508656009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 1,
-            "time": 1.9508656010000001,
+            "time": 1.9508656009999998,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 2,
             "oldPackets": 3,
-            "time": 1.9555856009999999,
+            "time": 1.9555856010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 6,
-            "time": 1.9555856009999999,
+            "time": 1.9555856010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -4288,7 +4288,7 @@
         {
             "newPackets": 4,
             "oldPackets": 3,
-            "time": 1.9590048010000001,
+            "time": 1.9590048009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -4328,7 +4328,7 @@
         {
             "newPackets": 5,
             "oldPackets": 4,
-            "time": 1.9679728009999999,
+            "time": 1.9679728010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -4386,13 +4386,13 @@
         {
             "newPackets": 9,
             "oldPackets": 8,
-            "time": 1.9783568010000001,
+            "time": 1.9783568009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 10,
             "oldPackets": 9,
-            "time": 1.9788288009999999,
+            "time": 1.9788288010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -4444,23 +4444,23 @@
         {
             "newPackets": 11,
             "oldPackets": 12,
-            "time": 1.9886256010000001,
+            "time": 1.9886256009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 20,
-            "time": 1.9886256010000001,
+            "time": 1.9886256009999999,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 10,
             "oldPackets": 11,
-            "time": 1.9933456009999999,
+            "time": 1.9933456010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 24,
-            "time": 1.9933456009999999,
+            "time": 1.9933456010000001,
             "type": "SOJOURN_TIME"
         },
         {
@@ -4472,13 +4472,13 @@
         {
             "newPackets": 12,
             "oldPackets": 11,
-            "time": 1.9967648010000001,
+            "time": 1.9967648009999999,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 13,
             "oldPackets": 12,
-            "time": 1.9972368009999999,
+            "time": 1.9972368010000001,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -5052,7 +5052,7 @@
         {
             "newPackets": 35,
             "oldPackets": 34,
-            "time": 2.1190128009999998,
+            "time": 2.1190128010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -5557,12 +5557,12 @@
         {
             "newPackets": 35,
             "oldPackets": 36,
-            "time": 2.2576656009999998,
+            "time": 2.2576656010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 157,
-            "time": 2.2576656009999998,
+            "time": 2.2576656010000002,
             "type": "SOJOURN_TIME"
         },
         {
@@ -5614,12 +5614,12 @@
         {
             "newPackets": 36,
             "oldPackets": 37,
-            "time": 2.2718256010000002,
+            "time": 2.2718256009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 162,
-            "time": 2.2718256010000002,
+            "time": 2.2718256009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -5846,7 +5846,7 @@
         {
             "newPackets": 37,
             "oldPackets": 36,
-            "time": 2.3361328010000002,
+            "time": 2.3361328009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -5920,7 +5920,7 @@
         {
             "newPackets": 38,
             "oldPackets": 37,
-            "time": 2.3554848009999998,
+            "time": 2.3554848010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -6034,12 +6034,12 @@
         {
             "newPackets": 38,
             "oldPackets": 39,
-            "time": 2.3851056009999998,
+            "time": 2.3851056010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 171,
-            "time": 2.3851056009999998,
+            "time": 2.3851056010000002,
             "type": "SOJOURN_TIME"
         },
         {
@@ -6374,7 +6374,7 @@
         {
             "newPackets": 40,
             "oldPackets": 39,
-            "time": 2.4786768010000002,
+            "time": 2.4786768009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -6493,18 +6493,18 @@
         {
             "newPackets": 38,
             "oldPackets": 39,
-            "time": 2.5125456009999998,
+            "time": 2.5125456010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 175,
-            "time": 2.5125456009999998,
+            "time": 2.5125456010000002,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 39,
             "oldPackets": 38,
-            "time": 2.5154928010000002,
+            "time": 2.5154928009999997,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -6550,12 +6550,12 @@
         {
             "newPackets": 39,
             "oldPackets": 40,
-            "time": 2.5267056010000002,
+            "time": 2.5267056009999997,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 171,
-            "time": 2.5267056010000002,
+            "time": 2.5267056009999997,
             "type": "SOJOURN_TIME"
         },
         {
@@ -6714,7 +6714,7 @@
         {
             "newPackets": 40,
             "oldPackets": 39,
-            "time": 2.5726048010000002,
+            "time": 2.5726048009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -6771,18 +6771,18 @@
         {
             "newPackets": 39,
             "oldPackets": 40,
-            "time": 2.5880656009999998,
+            "time": 2.5880656010000003,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 176,
-            "time": 2.5880656009999998,
+            "time": 2.5880656010000003,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 40,
             "oldPackets": 39,
-            "time": 2.5910128010000002,
+            "time": 2.5910128009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -6828,12 +6828,12 @@
         {
             "newPackets": 40,
             "oldPackets": 41,
-            "time": 2.6022256010000002,
+            "time": 2.6022256009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 180,
-            "time": 2.6022256010000002,
+            "time": 2.6022256009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -6856,7 +6856,7 @@
         {
             "newPackets": 41,
             "oldPackets": 40,
-            "time": 2.6103648009999998,
+            "time": 2.6103648010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -6964,12 +6964,12 @@
         {
             "newPackets": 40,
             "oldPackets": 41,
-            "time": 2.6399856009999998,
+            "time": 2.6399856010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 180,
-            "time": 2.6399856009999998,
+            "time": 2.6399856010000002,
             "type": "SOJOURN_TIME"
         },
         {
@@ -7009,12 +7009,12 @@
         {
             "newPackets": 39,
             "oldPackets": 40,
-            "time": 2.6541456010000002,
+            "time": 2.6541456009999997,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 176,
-            "time": 2.6541456010000002,
+            "time": 2.6541456009999997,
             "type": "SOJOURN_TIME"
         },
         {
@@ -7134,7 +7134,7 @@
         {
             "newPackets": 42,
             "oldPackets": 41,
-            "time": 2.6858848009999998,
+            "time": 2.6858848010000003,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -7196,7 +7196,7 @@
         {
             "newPackets": 41,
             "oldPackets": 40,
-            "time": 2.7042928009999998,
+            "time": 2.7042928010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -7242,12 +7242,12 @@
         {
             "newPackets": 41,
             "oldPackets": 42,
-            "time": 2.7155056009999998,
+            "time": 2.7155056010000003,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 181,
-            "time": 2.7155056009999998,
+            "time": 2.7155056010000003,
             "type": "SOJOURN_TIME"
         },
         {
@@ -7287,12 +7287,12 @@
         {
             "newPackets": 40,
             "oldPackets": 41,
-            "time": 2.7296656010000002,
+            "time": 2.7296656009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 185,
-            "time": 2.7296656010000002,
+            "time": 2.7296656009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -7372,7 +7372,7 @@
         {
             "newPackets": 42,
             "oldPackets": 41,
-            "time": 2.7519648010000002,
+            "time": 2.7519648009999997,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -7429,12 +7429,12 @@
         {
             "newPackets": 41,
             "oldPackets": 42,
-            "time": 2.7674256009999998,
+            "time": 2.7674256010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 185,
-            "time": 2.7674256009999998,
+            "time": 2.7674256010000002,
             "type": "SOJOURN_TIME"
         },
         {
@@ -7474,7 +7474,7 @@
         {
             "newPackets": 42,
             "oldPackets": 41,
-            "time": 2.7798128009999998,
+            "time": 2.7798128010000003,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -7486,12 +7486,12 @@
         {
             "newPackets": 42,
             "oldPackets": 43,
-            "time": 2.7815856010000002,
+            "time": 2.7815856009999997,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 190,
-            "time": 2.7815856010000002,
+            "time": 2.7815856009999997,
             "type": "SOJOURN_TIME"
         },
         {
@@ -7650,7 +7650,7 @@
         {
             "newPackets": 43,
             "oldPackets": 42,
-            "time": 2.8274848010000002,
+            "time": 2.8274848009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -7701,18 +7701,18 @@
         {
             "newPackets": 41,
             "oldPackets": 42,
-            "time": 2.8429456009999998,
+            "time": 2.8429456010000003,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 185,
-            "time": 2.8429456009999998,
+            "time": 2.8429456010000003,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 42,
             "oldPackets": 41,
-            "time": 2.8458928010000002,
+            "time": 2.8458928009999997,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -7764,12 +7764,12 @@
         {
             "newPackets": 43,
             "oldPackets": 44,
-            "time": 2.8571056010000002,
+            "time": 2.8571056009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 190,
-            "time": 2.8571056010000002,
+            "time": 2.8571056009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -7792,7 +7792,7 @@
         {
             "newPackets": 44,
             "oldPackets": 43,
-            "time": 2.8652448009999998,
+            "time": 2.8652448010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -7900,12 +7900,12 @@
         {
             "newPackets": 43,
             "oldPackets": 44,
-            "time": 2.8948656009999998,
+            "time": 2.8948656010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 190,
-            "time": 2.8948656009999998,
+            "time": 2.8948656010000002,
             "type": "SOJOURN_TIME"
         },
         {
@@ -7945,12 +7945,12 @@
         {
             "newPackets": 42,
             "oldPackets": 43,
-            "time": 2.9090256010000002,
+            "time": 2.9090256009999997,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 194,
-            "time": 2.9090256010000002,
+            "time": 2.9090256009999997,
             "type": "SOJOURN_TIME"
         },
         {
@@ -8064,7 +8064,7 @@
         {
             "newPackets": 44,
             "oldPackets": 43,
-            "time": 2.9407648009999998,
+            "time": 2.9407648010000003,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -8132,7 +8132,7 @@
         {
             "newPackets": 44,
             "oldPackets": 43,
-            "time": 2.9591728009999998,
+            "time": 2.9591728010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -8178,12 +8178,12 @@
         {
             "newPackets": 44,
             "oldPackets": 45,
-            "time": 2.9703856009999998,
+            "time": 2.9703856010000003,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 199,
-            "time": 2.9703856009999998,
+            "time": 2.9703856010000003,
             "type": "SOJOURN_TIME"
         },
         {
@@ -8223,12 +8223,12 @@
         {
             "newPackets": 43,
             "oldPackets": 44,
-            "time": 2.9845456010000002,
+            "time": 2.9845456009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 195,
-            "time": 2.9845456010000002,
+            "time": 2.9845456009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -8722,7 +8722,7 @@
         {
             "newPackets": 46,
             "oldPackets": 45,
-            "time": 3.1201248009999998,
+            "time": 3.1201248010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -8836,12 +8836,12 @@
         {
             "newPackets": 46,
             "oldPackets": 47,
-            "time": 3.1497456009999998,
+            "time": 3.1497456010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 200,
-            "time": 3.1497456009999998,
+            "time": 3.1497456010000002,
             "type": "SOJOURN_TIME"
         },
         {
@@ -8926,7 +8926,7 @@
         {
             "newPackets": 46,
             "oldPackets": 45,
-            "time": 3.1762928010000002,
+            "time": 3.1762928009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -9159,12 +9159,12 @@
         {
             "newPackets": 46,
             "oldPackets": 47,
-            "time": 3.2394256010000002,
+            "time": 3.2394256009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 204,
-            "time": 3.2394256010000002,
+            "time": 3.2394256009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -9295,12 +9295,12 @@
         {
             "newPackets": 46,
             "oldPackets": 47,
-            "time": 3.2771856009999998,
+            "time": 3.2771856010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 213,
-            "time": 3.2771856009999998,
+            "time": 3.2771856010000002,
             "type": "SOJOURN_TIME"
         },
         {
@@ -9522,7 +9522,7 @@
         {
             "newPackets": 49,
             "oldPackets": 48,
-            "time": 3.3372448010000002,
+            "time": 3.3372448009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -9630,12 +9630,12 @@
         {
             "newPackets": 48,
             "oldPackets": 49,
-            "time": 3.3668656010000002,
+            "time": 3.3668656009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 218,
-            "time": 3.3668656010000002,
+            "time": 3.3668656009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -9766,12 +9766,12 @@
         {
             "newPackets": 48,
             "oldPackets": 49,
-            "time": 3.4046256009999998,
+            "time": 3.4046256010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 218,
-            "time": 3.4046256009999998,
+            "time": 3.4046256010000002,
             "type": "SOJOURN_TIME"
         },
         {
@@ -9862,7 +9862,7 @@
         {
             "newPackets": 49,
             "oldPackets": 48,
-            "time": 3.4311728010000002,
+            "time": 3.4311728009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -9998,7 +9998,7 @@
         {
             "newPackets": 49,
             "oldPackets": 48,
-            "time": 3.4689328009999998,
+            "time": 3.4689328010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -10089,12 +10089,12 @@
         {
             "newPackets": 48,
             "oldPackets": 49,
-            "time": 3.4943056010000002,
+            "time": 3.4943056009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 223,
-            "time": 3.4943056010000002,
+            "time": 3.4943056009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -10174,7 +10174,7 @@
         {
             "newPackets": 50,
             "oldPackets": 49,
-            "time": 3.5166048010000002,
+            "time": 3.5166048009999997,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -10276,7 +10276,7 @@
         {
             "newPackets": 50,
             "oldPackets": 49,
-            "time": 3.5444528009999998,
+            "time": 3.5444528010000003,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -10288,12 +10288,12 @@
         {
             "newPackets": 50,
             "oldPackets": 51,
-            "time": 3.5462256010000002,
+            "time": 3.5462256009999997,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 218,
-            "time": 3.5462256010000002,
+            "time": 3.5462256009999997,
             "type": "SOJOURN_TIME"
         },
         {
@@ -10452,7 +10452,7 @@
         {
             "newPackets": 51,
             "oldPackets": 50,
-            "time": 3.5921248010000002,
+            "time": 3.5921248009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -10503,18 +10503,18 @@
         {
             "newPackets": 49,
             "oldPackets": 50,
-            "time": 3.6075856009999998,
+            "time": 3.6075856010000003,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 223,
-            "time": 3.6075856009999998,
+            "time": 3.6075856010000003,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 50,
             "oldPackets": 49,
-            "time": 3.6105328010000002,
+            "time": 3.6105328009999997,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -10526,7 +10526,7 @@
         {
             "newPackets": 52,
             "oldPackets": 51,
-            "time": 3.6114768009999998,
+            "time": 3.6114768010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -10566,12 +10566,12 @@
         {
             "newPackets": 51,
             "oldPackets": 52,
-            "time": 3.6217456010000002,
+            "time": 3.6217456009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 227,
-            "time": 3.6217456010000002,
+            "time": 3.6217456009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -10747,12 +10747,12 @@
         {
             "newPackets": 50,
             "oldPackets": 51,
-            "time": 3.6736656010000002,
+            "time": 3.6736656009999997,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 232,
-            "time": 3.6736656010000002,
+            "time": 3.6736656009999997,
             "type": "SOJOURN_TIME"
         },
         {
@@ -10792,7 +10792,7 @@
         {
             "newPackets": 51,
             "oldPackets": 50,
-            "time": 3.6860528010000002,
+            "time": 3.6860528009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -10866,7 +10866,7 @@
         {
             "newPackets": 52,
             "oldPackets": 51,
-            "time": 3.7054048009999998,
+            "time": 3.7054048010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -10934,7 +10934,7 @@
         {
             "newPackets": 52,
             "oldPackets": 51,
-            "time": 3.7238128009999998,
+            "time": 3.7238128010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -10980,12 +10980,12 @@
         {
             "newPackets": 52,
             "oldPackets": 53,
-            "time": 3.7350256009999998,
+            "time": 3.7350256010000003,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 228,
-            "time": 3.7350256009999998,
+            "time": 3.7350256010000003,
             "type": "SOJOURN_TIME"
         },
         {
@@ -11025,12 +11025,12 @@
         {
             "newPackets": 51,
             "oldPackets": 52,
-            "time": 3.7491856010000002,
+            "time": 3.7491856009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 232,
-            "time": 3.7491856010000002,
+            "time": 3.7491856009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -11206,7 +11206,7 @@
         {
             "newPackets": 52,
             "oldPackets": 51,
-            "time": 3.7993328009999998,
+            "time": 3.7993328010000003,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -11224,12 +11224,12 @@
         {
             "newPackets": 53,
             "oldPackets": 54,
-            "time": 3.8011056010000002,
+            "time": 3.8011056009999997,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 237,
-            "time": 3.8011056010000002,
+            "time": 3.8011056009999997,
             "type": "SOJOURN_TIME"
         },
         {
@@ -11388,7 +11388,7 @@
         {
             "newPackets": 54,
             "oldPackets": 53,
-            "time": 3.8470048010000002,
+            "time": 3.8470048009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -11439,18 +11439,18 @@
         {
             "newPackets": 52,
             "oldPackets": 53,
-            "time": 3.8624656009999998,
+            "time": 3.8624656010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 242,
-            "time": 3.8624656009999998,
+            "time": 3.8624656010000002,
             "type": "SOJOURN_TIME"
         },
         {
             "newPackets": 53,
             "oldPackets": 52,
-            "time": 3.8654128010000002,
+            "time": 3.8654128009999997,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -11496,12 +11496,12 @@
         {
             "newPackets": 53,
             "oldPackets": 54,
-            "time": 3.8766256010000002,
+            "time": 3.8766256009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 237,
-            "time": 3.8766256010000002,
+            "time": 3.8766256009999998,
             "type": "SOJOURN_TIME"
         },
         {
@@ -11728,7 +11728,7 @@
         {
             "newPackets": 54,
             "oldPackets": 53,
-            "time": 3.9409328010000002,
+            "time": 3.9409328009999998,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -11802,7 +11802,7 @@
         {
             "newPackets": 55,
             "oldPackets": 54,
-            "time": 3.9602848009999998,
+            "time": 3.9602848010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -11864,7 +11864,7 @@
         {
             "newPackets": 54,
             "oldPackets": 53,
-            "time": 3.9786928009999998,
+            "time": 3.9786928010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -11916,12 +11916,12 @@
         {
             "newPackets": 55,
             "oldPackets": 56,
-            "time": 3.9899056009999998,
+            "time": 3.9899056010000002,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 246,
-            "time": 3.9899056009999998,
+            "time": 3.9899056010000002,
             "type": "SOJOURN_TIME"
         },
         {
@@ -12868,7 +12868,7 @@
         {
             "newPackets": 57,
             "oldPackets": 56,
-            "time": 4.2524528009999996,
+            "time": 4.2524528010000004,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -14020,7 +14020,7 @@
         {
             "newPackets": 62,
             "oldPackets": 61,
-            "time": 4.5644448009999996,
+            "time": 4.5644448010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -14122,18 +14122,18 @@
         {
             "newPackets": 62,
             "oldPackets": 61,
-            "time": 4.5927648010000004,
+            "time": 4.5927648009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 61,
             "oldPackets": 62,
-            "time": 4.5940656009999996,
+            "time": 4.5940656010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 275,
-            "time": 4.5940656009999996,
+            "time": 4.5940656010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -14230,12 +14230,12 @@
         {
             "newPackets": 61,
             "oldPackets": 62,
-            "time": 4.6223856010000004,
+            "time": 4.6223856009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 275,
-            "time": 4.6223856010000004,
+            "time": 4.6223856009999995,
             "type": "SOJOURN_TIME"
         },
         {
@@ -14462,7 +14462,7 @@
         {
             "newPackets": 62,
             "oldPackets": 61,
-            "time": 4.6866928010000004,
+            "time": 4.6866928009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -14587,12 +14587,12 @@
         {
             "newPackets": 61,
             "oldPackets": 62,
-            "time": 4.7215056009999996,
+            "time": 4.7215056010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 279,
-            "time": 4.7215056009999996,
+            "time": 4.7215056010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -14695,12 +14695,12 @@
         {
             "newPackets": 62,
             "oldPackets": 63,
-            "time": 4.7498256010000004,
+            "time": 4.7498256009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 280,
-            "time": 4.7498256010000004,
+            "time": 4.7498256009999995,
             "type": "SOJOURN_TIME"
         },
         {
@@ -14950,7 +14950,7 @@
         {
             "newPackets": 64,
             "oldPackets": 63,
-            "time": 4.8193248009999996,
+            "time": 4.8193248010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -15058,18 +15058,18 @@
         {
             "newPackets": 65,
             "oldPackets": 64,
-            "time": 4.8476448010000004,
+            "time": 4.8476448009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "newPackets": 64,
             "oldPackets": 65,
-            "time": 4.8489456009999996,
+            "time": 4.8489456010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 284,
-            "time": 4.8489456009999996,
+            "time": 4.8489456010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -15166,12 +15166,12 @@
         {
             "newPackets": 64,
             "oldPackets": 65,
-            "time": 4.8772656010000004,
+            "time": 4.8772656009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 284,
-            "time": 4.8772656010000004,
+            "time": 4.8772656009999995,
             "type": "SOJOURN_TIME"
         },
         {
@@ -15398,7 +15398,7 @@
         {
             "newPackets": 65,
             "oldPackets": 64,
-            "time": 4.9415728010000004,
+            "time": 4.9415728009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -15523,12 +15523,12 @@
         {
             "newPackets": 64,
             "oldPackets": 65,
-            "time": 4.9763856009999996,
+            "time": 4.9763856010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 289,
-            "time": 4.9763856009999996,
+            "time": 4.9763856010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -17752,7 +17752,7 @@
         {
             "newPackets": 72,
             "oldPackets": 71,
-            "time": 5.5839648009999996,
+            "time": 5.5839648010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -17866,12 +17866,12 @@
         {
             "newPackets": 72,
             "oldPackets": 73,
-            "time": 5.6135856009999996,
+            "time": 5.6135856010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 322,
-            "time": 5.6135856009999996,
+            "time": 5.6135856010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -18092,7 +18092,7 @@
         {
             "newPackets": 72,
             "oldPackets": 71,
-            "time": 5.6778928009999996,
+            "time": 5.6778928010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -18200,7 +18200,7 @@
         {
             "newPackets": 73,
             "oldPackets": 72,
-            "time": 5.7062128010000004,
+            "time": 5.7062128009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -18325,12 +18325,12 @@
         {
             "newPackets": 72,
             "oldPackets": 73,
-            "time": 5.7410256009999996,
+            "time": 5.7410256010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 327,
-            "time": 5.7410256009999996,
+            "time": 5.7410256010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -18410,7 +18410,7 @@
         {
             "newPackets": 74,
             "oldPackets": 73,
-            "time": 5.7633248010000004,
+            "time": 5.7633248009999996,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -18688,7 +18688,7 @@
         {
             "newPackets": 75,
             "oldPackets": 74,
-            "time": 5.8388448009999996,
+            "time": 5.8388448010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -18796,12 +18796,12 @@
         {
             "newPackets": 74,
             "oldPackets": 75,
-            "time": 5.8684656009999996,
+            "time": 5.8684656010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 332,
-            "time": 5.8684656009999996,
+            "time": 5.8684656010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -18983,12 +18983,12 @@
         {
             "newPackets": 74,
             "oldPackets": 75,
-            "time": 5.9203856010000004,
+            "time": 5.9203856009999996,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 336,
-            "time": 5.9203856010000004,
+            "time": 5.9203856009999996,
             "type": "SOJOURN_TIME"
         },
         {
@@ -19028,7 +19028,7 @@
         {
             "newPackets": 75,
             "oldPackets": 74,
-            "time": 5.9327728009999996,
+            "time": 5.9327728010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -19261,12 +19261,12 @@
         {
             "newPackets": 75,
             "oldPackets": 76,
-            "time": 5.9959056009999996,
+            "time": 5.9959056010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 336,
-            "time": 5.9959056009999996,
+            "time": 5.9959056010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -19919,12 +19919,12 @@
         {
             "newPackets": 77,
             "oldPackets": 78,
-            "time": 6.1752656010000004,
+            "time": 6.1752656009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 346,
-            "time": 6.1752656010000004,
+            "time": 6.1752656009999995,
             "type": "SOJOURN_TIME"
         },
         {
@@ -20191,12 +20191,12 @@
         {
             "newPackets": 77,
             "oldPackets": 78,
-            "time": 6.2507856009999996,
+            "time": 6.2507856010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 355,
-            "time": 6.2507856009999996,
+            "time": 6.2507856010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -20214,7 +20214,7 @@
         {
             "newPackets": 80,
             "oldPackets": 79,
-            "time": 6.2546768009999996,
+            "time": 6.2546768010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -20282,7 +20282,7 @@
         {
             "newPackets": 80,
             "oldPackets": 79,
-            "time": 6.2730848010000004,
+            "time": 6.2730848009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -20390,12 +20390,12 @@
         {
             "newPackets": 79,
             "oldPackets": 80,
-            "time": 6.3027056010000004,
+            "time": 6.3027056009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 351,
-            "time": 6.3027056010000004,
+            "time": 6.3027056009999995,
             "type": "SOJOURN_TIME"
         },
         {
@@ -20554,7 +20554,7 @@
         {
             "newPackets": 80,
             "oldPackets": 79,
-            "time": 6.3486048009999996,
+            "time": 6.3486048010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -20622,7 +20622,7 @@
         {
             "newPackets": 80,
             "oldPackets": 79,
-            "time": 6.3670128010000004,
+            "time": 6.3670128009999996,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -20668,12 +20668,12 @@
         {
             "newPackets": 80,
             "oldPackets": 81,
-            "time": 6.3782256009999996,
+            "time": 6.3782256010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 360,
-            "time": 6.3782256009999996,
+            "time": 6.3782256010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -20849,12 +20849,12 @@
         {
             "newPackets": 79,
             "oldPackets": 80,
-            "time": 6.4301456010000004,
+            "time": 6.4301456009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 364,
-            "time": 6.4301456010000004,
+            "time": 6.4301456009999995,
             "type": "SOJOURN_TIME"
         },
         {
@@ -21127,12 +21127,12 @@
         {
             "newPackets": 80,
             "oldPackets": 81,
-            "time": 6.5056656009999996,
+            "time": 6.5056656010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 364,
-            "time": 6.5056656009999996,
+            "time": 6.5056656010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -21212,7 +21212,7 @@
         {
             "newPackets": 82,
             "oldPackets": 81,
-            "time": 6.5279648010000004,
+            "time": 6.5279648009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -21326,12 +21326,12 @@
         {
             "newPackets": 82,
             "oldPackets": 83,
-            "time": 6.5575856010000004,
+            "time": 6.5575856009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 369,
-            "time": 6.5575856010000004,
+            "time": 6.5575856009999995,
             "type": "SOJOURN_TIME"
         },
         {
@@ -21490,7 +21490,7 @@
         {
             "newPackets": 83,
             "oldPackets": 82,
-            "time": 6.6034848009999996,
+            "time": 6.6034848010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -21552,7 +21552,7 @@
         {
             "newPackets": 82,
             "oldPackets": 81,
-            "time": 6.6218928010000004,
+            "time": 6.6218928009999996,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -21604,12 +21604,12 @@
         {
             "newPackets": 83,
             "oldPackets": 84,
-            "time": 6.6331056009999996,
+            "time": 6.6331056010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 369,
-            "time": 6.6331056009999996,
+            "time": 6.6331056010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -21785,12 +21785,12 @@
         {
             "newPackets": 82,
             "oldPackets": 83,
-            "time": 6.6850256010000004,
+            "time": 6.6850256009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 374,
-            "time": 6.6850256010000004,
+            "time": 6.6850256009999995,
             "type": "SOJOURN_TIME"
         },
         {
@@ -21830,7 +21830,7 @@
         {
             "newPackets": 83,
             "oldPackets": 82,
-            "time": 6.6974128009999996,
+            "time": 6.6974128010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -22063,12 +22063,12 @@
         {
             "newPackets": 83,
             "oldPackets": 84,
-            "time": 6.7605456009999996,
+            "time": 6.7605456010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 374,
-            "time": 6.7605456009999996,
+            "time": 6.7605456010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -22148,7 +22148,7 @@
         {
             "newPackets": 85,
             "oldPackets": 84,
-            "time": 6.7828448010000004,
+            "time": 6.7828448009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -22256,12 +22256,12 @@
         {
             "newPackets": 84,
             "oldPackets": 85,
-            "time": 6.8124656010000004,
+            "time": 6.8124656009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 378,
-            "time": 6.8124656010000004,
+            "time": 6.8124656009999995,
             "type": "SOJOURN_TIME"
         },
         {
@@ -22426,7 +22426,7 @@
         {
             "newPackets": 86,
             "oldPackets": 85,
-            "time": 6.8583648009999996,
+            "time": 6.8583648010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -22488,7 +22488,7 @@
         {
             "newPackets": 85,
             "oldPackets": 84,
-            "time": 6.8767728010000004,
+            "time": 6.8767728009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -22534,12 +22534,12 @@
         {
             "newPackets": 85,
             "oldPackets": 86,
-            "time": 6.8879856009999996,
+            "time": 6.8879856010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 379,
-            "time": 6.8879856009999996,
+            "time": 6.8879856010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -22721,12 +22721,12 @@
         {
             "newPackets": 85,
             "oldPackets": 86,
-            "time": 6.9399056010000004,
+            "time": 6.9399056009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 384,
-            "time": 6.9399056010000004,
+            "time": 6.9399056009999995,
             "type": "SOJOURN_TIME"
         },
         {
@@ -22766,7 +22766,7 @@
         {
             "newPackets": 86,
             "oldPackets": 85,
-            "time": 6.9522928009999996,
+            "time": 6.9522928010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -23362,7 +23362,7 @@
         {
             "newPackets": 89,
             "oldPackets": 88,
-            "time": 7.1132448009999996,
+            "time": 7.1132448010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -23470,12 +23470,12 @@
         {
             "newPackets": 88,
             "oldPackets": 89,
-            "time": 7.1428656009999996,
+            "time": 7.1428656010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 397,
-            "time": 7.1428656009999996,
+            "time": 7.1428656010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -23929,12 +23929,12 @@
         {
             "newPackets": 88,
             "oldPackets": 89,
-            "time": 7.2703056009999996,
+            "time": 7.2703056010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 402,
-            "time": 7.2703056009999996,
+            "time": 7.2703056010000005,
             "type": "SOJOURN_TIME"
         },
         {
@@ -24128,12 +24128,12 @@
         {
             "newPackets": 90,
             "oldPackets": 91,
-            "time": 7.3222256010000004,
+            "time": 7.3222256009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 406,
-            "time": 7.3222256010000004,
+            "time": 7.3222256009999995,
             "type": "SOJOURN_TIME"
         },
         {
@@ -24292,7 +24292,7 @@
         {
             "newPackets": 91,
             "oldPackets": 90,
-            "time": 7.3681248009999996,
+            "time": 7.3681248010000004,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -24354,7 +24354,7 @@
         {
             "newPackets": 90,
             "oldPackets": 89,
-            "time": 7.3865328010000004,
+            "time": 7.3865328009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -24406,12 +24406,12 @@
         {
             "newPackets": 91,
             "oldPackets": 92,
-            "time": 7.3977456009999996,
+            "time": 7.3977456010000004,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 407,
-            "time": 7.3977456009999996,
+            "time": 7.3977456010000004,
             "type": "SOJOURN_TIME"
         },
         {
@@ -24632,7 +24632,7 @@
         {
             "newPackets": 91,
             "oldPackets": 90,
-            "time": 7.4620528009999996,
+            "time": 7.4620528010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -24865,12 +24865,12 @@
         {
             "newPackets": 91,
             "oldPackets": 92,
-            "time": 7.5251856009999996,
+            "time": 7.5251856010000004,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 412,
-            "time": 7.5251856009999996,
+            "time": 7.5251856010000004,
             "type": "SOJOURN_TIME"
         },
         {
@@ -24950,7 +24950,7 @@
         {
             "newPackets": 93,
             "oldPackets": 92,
-            "time": 7.5474848010000004,
+            "time": 7.5474848009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -25064,12 +25064,12 @@
         {
             "newPackets": 93,
             "oldPackets": 94,
-            "time": 7.5771056010000004,
+            "time": 7.5771056009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 416,
-            "time": 7.5771056010000004,
+            "time": 7.5771056009999995,
             "type": "SOJOURN_TIME"
         },
         {
@@ -25290,7 +25290,7 @@
         {
             "newPackets": 93,
             "oldPackets": 92,
-            "time": 7.6414128010000004,
+            "time": 7.6414128009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -25523,12 +25523,12 @@
         {
             "newPackets": 93,
             "oldPackets": 94,
-            "time": 7.7045456010000004,
+            "time": 7.7045456009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 421,
-            "time": 7.7045456010000004,
+            "time": 7.7045456009999995,
             "type": "SOJOURN_TIME"
         },
         {
@@ -25546,7 +25546,7 @@
         {
             "newPackets": 96,
             "oldPackets": 95,
-            "time": 7.7084368010000004,
+            "time": 7.7084368009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -25574,7 +25574,7 @@
         {
             "newPackets": 95,
             "oldPackets": 94,
-            "time": 7.7169328009999996,
+            "time": 7.7169328010000005,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -25892,7 +25892,7 @@
         {
             "newPackets": 97,
             "oldPackets": 96,
-            "time": 7.8023648010000004,
+            "time": 7.8023648009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -26006,12 +26006,12 @@
         {
             "newPackets": 97,
             "oldPackets": 98,
-            "time": 7.8319856010000004,
+            "time": 7.8319856009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 426,
-            "time": 7.8319856010000004,
+            "time": 7.8319856009999995,
             "type": "SOJOURN_TIME"
         },
         {
@@ -26238,7 +26238,7 @@
         {
             "newPackets": 98,
             "oldPackets": 97,
-            "time": 7.8962928010000004,
+            "time": 7.8962928009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -26471,12 +26471,12 @@
         {
             "newPackets": 98,
             "oldPackets": 99,
-            "time": 7.9594256010000004,
+            "time": 7.9594256009999995,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 431,
-            "time": 7.9594256010000004,
+            "time": 7.9594256009999995,
             "type": "SOJOURN_TIME"
         },
         {
@@ -26516,7 +26516,7 @@
         {
             "newPackets": 99,
             "oldPackets": 98,
-            "time": 7.9718128009999996,
+            "time": 7.9718128010000004,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -27612,7 +27612,7 @@
         {
             "newPackets": 99,
             "oldPackets": 98,
-            "time": 8.2644528009999991,
+            "time": 8.2644528010000009,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -28226,7 +28226,7 @@
         {
             "newPackets": 100,
             "oldPackets": 99,
-            "time": 8.4254048010000009,
+            "time": 8.4254048009999991,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -28578,7 +28578,7 @@
         {
             "newPackets": 99,
             "oldPackets": 98,
-            "time": 8.5193328009999991,
+            "time": 8.5193328010000009,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -28692,7 +28692,7 @@
         {
             "newPackets": 100,
             "oldPackets": 99,
-            "time": 8.5480864010000008,
+            "time": 8.5480864009999991,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -28823,12 +28823,12 @@
         {
             "newPackets": 98,
             "oldPackets": 99,
-            "time": 8.5824656010000009,
+            "time": 8.5824656009999991,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 468,
-            "time": 8.5824656010000009,
+            "time": 8.5824656009999991,
             "type": "SOJOURN_TIME"
         },
         {
@@ -29300,12 +29300,12 @@
         {
             "newPackets": 99,
             "oldPackets": 100,
-            "time": 8.7099056010000009,
+            "time": 8.7099056009999991,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 464,
-            "time": 8.7099056010000009,
+            "time": 8.7099056009999991,
             "type": "SOJOURN_TIME"
         },
         {
@@ -29322,7 +29322,7 @@
         {
             "newPackets": 99,
             "oldPackets": 98,
-            "time": 8.7189232010000008,
+            "time": 8.7189232009999991,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -29458,7 +29458,7 @@
         {
             "newPackets": 99,
             "oldPackets": 98,
-            "time": 8.7566064010000009,
+            "time": 8.7566064009999991,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
@@ -29765,12 +29765,12 @@
         {
             "newPackets": 98,
             "oldPackets": 99,
-            "time": 8.8373456010000009,
+            "time": 8.8373456009999991,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 468,
-            "time": 8.8373456010000009,
+            "time": 8.8373456009999991,
             "type": "SOJOURN_TIME"
         },
         {
@@ -30230,12 +30230,12 @@
         {
             "newPackets": 99,
             "oldPackets": 100,
-            "time": 8.9647856010000009,
+            "time": 8.9647856009999991,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 464,
-            "time": 8.9647856010000009,
+            "time": 8.9647856009999991,
             "type": "SOJOURN_TIME"
         },
         {
@@ -30956,12 +30956,12 @@
         {
             "newPackets": 65,
             "oldPackets": 66,
-            "time": 9.2196656010000009,
+            "time": 9.2196656009999991,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 463,
-            "time": 9.2196656010000009,
+            "time": 9.2196656009999991,
             "type": "SOJOURN_TIME"
         },
         {
@@ -31277,12 +31277,12 @@
         {
             "newPackets": 42,
             "oldPackets": 43,
-            "time": 9.3471056010000009,
+            "time": 9.3471056009999991,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 467,
-            "time": 9.3471056010000009,
+            "time": 9.3471056009999991,
             "type": "SOJOURN_TIME"
         },
         {
@@ -31592,12 +31592,12 @@
         {
             "newPackets": 18,
             "oldPackets": 19,
-            "time": 9.4745456010000009,
+            "time": 9.4745456009999991,
             "type": "QUEUE_LEN_CHANGE"
         },
         {
             "delayMs": 463,
-            "time": 9.4745456010000009,
+            "time": 9.4745456009999991,
             "type": "SOJOURN_TIME"
         },
         {
@@ -32142,17 +32142,15 @@
     "links": [
         {
             "delay": "10ms",
-            "from": 0,
             "label": "fast",
-            "rate": "10Mbps",
-            "to": 1
+            "linkId": "n0-n1",
+            "rate": "10Mbps"
         },
         {
             "delay": "50ms",
-            "from": 1,
             "label": "bottleneck",
-            "rate": "1Mbps",
-            "to": 2
+            "linkId": "n1-n2",
+            "rate": "1Mbps"
         }
     ],
     "metrics": {

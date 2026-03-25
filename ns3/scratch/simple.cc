@@ -13,6 +13,7 @@
 // https://www.nsnam.org/docs/release/3.27/doxygen/group__traffic-control.html
 #include <fstream>
 #include <jsoncpp/json/json.h>
+#include <algorithm>
 
 using namespace ns3;
 using namespace Json;
@@ -86,7 +87,7 @@ DropTrace(Ptr<const QueueDiscItem> item)
     event["size"] = packet->GetSize(); // in bytes
     events.append(event);
 
-    queueMetrics.packetsLost++;
+    queueMetrics.packetsLost++; // dropped by qdisc
 }
 
 int

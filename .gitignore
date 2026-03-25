@@ -12,3 +12,5 @@ note.md
 cmake-cache/
 build/
 
+frontend/public/*.json
+

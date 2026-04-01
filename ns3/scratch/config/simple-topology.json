@@ -1,0 +1,38 @@
+{
+  "topology": "simple",
+  "simTime": 10.0,
+  "links": [
+    {
+      "linkId": "n0-n1",
+      "from": 0,
+      "to": 1,
+      "rate": "10Mbps",
+      "delay": "10ms",
+      "label": "fast",
+      "trace": {
+        "queueLenChanges": [],
+        "packetDrops": [],
+        "packetArrivals": []
+      }
+    },
+    {
+      "linkId": "n1-n2",
+      "from": 1,
+      "to": 2,
+      "rate": "1Mbps",
+      "delay": "50ms",
+      "label": "bottleneck",
+      "trace": {
+        "queueLenChanges": [
+          { "time": 1.20, "oldPackets": 2, "newPackets": 3 }
+        ],
+        "packetDrops": [
+          { "time": 2.41, "packetId": 42, "size": 1024 }
+        ],
+        "packetArrivals": [
+          { "time": 1.35, "packetId": 42, "size": 1024 }
+        ]
+      }
+    }
+  ]
+}

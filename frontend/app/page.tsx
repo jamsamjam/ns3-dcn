@@ -249,7 +249,6 @@ export default function Home() {
 
   const boundedPlayIndex = Math.min(playIndex, Math.max(queueEvents.length - 1, 0));
   const activeQueuePoint = queueEvents[boundedPlayIndex] ?? null;
-  const activeRawEvent = activeQueuePoint?.raw ?? null;
   const activePackets = activeQueuePoint?.packets ?? 0;
   const queueUtilization = clamp((activePackets / Math.max(queueCapacity, 1)) * 100, 0, 100);
   const currentTime = activeQueuePoint?.time ?? 0;
@@ -297,7 +296,7 @@ export default function Home() {
       fastLink.linkId,
       bottleneckLink.linkId
     );
-  }, [queueEvents, dequeueEvents, dropEvents, boundedPlayIndex, fastLink, bottleneckLink]);
+  }, [queueEvents, dequeueEvents, boundedPlayIndex, fastLink, bottleneckLink]);
 
   const recentEvents = useMemo(() => {
     if (!activeQueuePoint) {
@@ -317,7 +316,13 @@ export default function Home() {
     bottleneckLink?.trace?.metrics?.maxQueueSize ??
     Math.max(...queueEvents.map((event) => event.packets), 0);
 
-  const avgSojourn = bottleneckLink?.trace?.metrics?.avgSojournTime ?? 0;
+  const routerNodeId = bottleneckLink?.from ?? 1;
+  const routerPanelLeft = useMemo(() => {
+    if (routerNodeId === 0) return "6%";
+    if (routerNodeId === 2) return "94%";
+    return "47%";
+  }, [routerNodeId]);
+
   const packetsLost = bottleneckLink?.trace?.metrics?.packetsLost ?? dropEvents.length;
   const dropIsActive = Boolean(recentDrop && currentTime - recentDrop.time < 0.4);
 
@@ -446,7 +451,7 @@ export default function Home() {
                   </button>
                 </div>
 
-                <div className="relative hidden h-[320px] md:block">
+                <div className="relative hidden h-[370px] md:block">
                   <div className="absolute left-[6%] top-[49%] h-8 w-8 -translate-y-1/2 rounded-full border border-zinc-200 bg-zinc-900" />
                   <div className="absolute left-[47%] top-[49%] h-10 w-10 -translate-y-1/2 rounded-full border border-amber-500/70 bg-zinc-900" />
                   <div className="absolute right-[6%] top-[49%] h-8 w-8 -translate-y-1/2 rounded-full border border-zinc-200 bg-zinc-900" />
@@ -502,55 +507,23 @@ export default function Home() {
                       />
                     );
                   })}
-                </div>
 
-                <div className="grid grid-cols-1 gap-4 md:hidden">
-                  <div className="rounded-2xl border border-zinc-800 p-4 text-center">
-                    <p className="font-semibold">n0 → n1</p>
-                    <p className="mt-1 text-sm text-zinc-400">{fastLink ? `${fastLink.rate} / ${fastLink.delay}` : "-"}</p>
-                  </div>
-                  <div className="rounded-2xl border border-zinc-800 p-4 text-center">
-                    <p className="font-semibold">n1 → n2</p>
-                    <p className="mt-1 text-sm text-zinc-400">{bottleneckLink ? `${bottleneckLink.rate} / ${bottleneckLink.delay}` : "-"}</p>
-                  </div>
-                </div>
-
-                <div className="mt-6 grid gap-3 md:grid-cols-4">
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
-                    <p className="text-xs tracking-[0.2em] text-zinc-500">Current queue</p>
-                    <p className="mt-2 text-lg font-semibold">{activePackets}</p>
-                    <p className="mt-1 text-xs text-zinc-400">{currentTime.toFixed(3)} s</p>
-                  </div>
-
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
-                    <p className="text-xs tracking-[0.2em] text-zinc-500">Queue utilization</p>
-                    <p className="mt-2 text-lg font-semibold">{queueUtilization.toFixed(0)}%</p>
-                    <div className="mt-3 h-3 overflow-hidden rounded-full bg-zinc-800">
-                      <div
-                        className={`h-full rounded-full transition-all duration-100 ${
-                          queueUtilization > 95
-                            ? "bg-rose-500"
-                            : queueUtilization > 75
-                              ? "bg-amber-400"
-                              : "bg-emerald-400"
-                        }`}
-                        style={{ width: `${queueUtilization}%` }}
-                      />
+                  <div
+                    className="absolute top-[74%] w-[180px] -translate-x-1/2 rounded-md border border-zinc-700 px-4 py-3"
+                    style={{ left: routerPanelLeft }}
+                  >
+                    <div className="grid grid-cols-2 gap-y-1 text-sm">
+                      <p className="text-zinc-400">Current</p>
+                      <p className="text-right font-semibold text-zinc-100">{activePackets} pkt</p>
+                      <p className="text-zinc-400">Utilization</p>
+                      <p className="text-right font-semibold text-zinc-100">{queueUtilization.toFixed(0)}%</p>
+                      <p className="text-zinc-400">Sojourn</p>
+                      <p className="text-right font-semibold text-zinc-100">{formatMs(nearestSojourn?.delayMs)}</p>
+                      <p className="text-zinc-400">Drops</p>
+                      <p className={`text-right font-semibold ${dropIsActive ? "text-rose-400" : "text-zinc-100"}`}>
+                        {packetsLost}
+                      </p>
                     </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
-                    <p className="text-xs tracking-[0.2em] text-zinc-500">Sojourn</p>
-                    <p className="mt-2 text-lg font-semibold">{formatMs(nearestSojourn?.delayMs)}</p>
-                    <p className="mt-1 text-xs text-zinc-400">avg {formatMs(avgSojourn)}</p>
-                  </div>
-
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
-                    <p className="text-xs tracking-[0.2em] text-zinc-500">Drops</p>
-                    <p className="mt-2 text-lg font-semibold">{packetsLost}</p>
-                    <p className={`mt-1 text-xs ${dropIsActive ? "text-rose-400" : "text-zinc-400"}`}>
-                      {dropIsActive ? "drop active" : "stable"}
-                    </p>
                   </div>
                 </div>
               </div>

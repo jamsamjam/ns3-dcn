@@ -219,7 +219,7 @@ export default function Home() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playIndex, setPlayIndex] = useState(0);
 
-  const links = trace?.links ?? [];
+  const links = useMemo(() => trace?.links ?? [], [trace?.links]);
   const allEvents = useMemo(() => flattenTimeline(links), [links]);
 
   const fastLink = useMemo(() => links.find((l) => l.label === "fast") ?? links[0] ?? null, [links]);
@@ -316,12 +316,46 @@ export default function Home() {
     bottleneckLink?.trace?.metrics?.maxQueueSize ??
     Math.max(...queueEvents.map((event) => event.packets), 0);
 
+  const nodeIds = useMemo(() => {
+    const unique = new Set<number>();
+    for (const link of links) {
+      unique.add(link.from);
+      unique.add(link.to);
+    }
+    return Array.from(unique).sort((a, b) => a - b);
+  }, [links]);
+
+  const nodeLeftById = useMemo(() => {
+    const map = new Map<number, number>();
+    if (nodeIds.length === 0) {
+      return map;
+    }
+    if (nodeIds.length === 1) {
+      map.set(nodeIds[0], 50);
+      return map;
+    }
+
+    const minLeft = 6;
+    const maxLeft = 94;
+    const step = (maxLeft - minLeft) / (nodeIds.length - 1);
+
+    nodeIds.forEach((nodeId, index) => {
+      map.set(nodeId, minLeft + step * index);
+    });
+
+    return map;
+  }, [nodeIds]);
+
+  const linkById = useMemo(() => {
+    const map = new Map<string, TraceLink>();
+    for (const link of links) {
+      map.set(link.linkId, link);
+    }
+    return map;
+  }, [links]);
+
   const routerNodeId = bottleneckLink?.from ?? 1;
-  const routerPanelLeft = useMemo(() => {
-    if (routerNodeId === 0) return "6%";
-    if (routerNodeId === 2) return "94%";
-    return "47%";
-  }, [routerNodeId]);
+  const routerPanelLeft = `${nodeLeftById.get(routerNodeId) ?? 50}%`;
 
   const packetsLost = bottleneckLink?.trace?.metrics?.packetsLost ?? dropEvents.length;
   const dropIsActive = Boolean(recentDrop && currentTime - recentDrop.time < 0.4);
@@ -452,52 +486,78 @@ export default function Home() {
                 </div>
 
                 <div className="relative hidden h-[370px] md:block">
-                  <div className="absolute left-[6%] top-[49%] h-8 w-8 -translate-y-1/2 rounded-full border border-zinc-200 bg-zinc-900" />
-                  <div className="absolute left-[47%] top-[49%] h-10 w-10 -translate-y-1/2 rounded-full border border-amber-500/70 bg-zinc-900" />
-                  <div className="absolute right-[6%] top-[49%] h-8 w-8 -translate-y-1/2 rounded-full border border-zinc-200 bg-zinc-900" />
+                  {links.map((link) => {
+                    const fromLeft = nodeLeftById.get(link.from) ?? 50;
+                    const toLeft = nodeLeftById.get(link.to) ?? 50;
+                    const left = Math.min(fromLeft, toLeft);
+                    const width = Math.abs(toLeft - fromLeft);
+                    const labelLeft = left + width / 2;
+                    const isBottleneck = link.linkId === bottleneckLink?.linkId;
 
-                  <div className="absolute left-[10%] right-[56%] top-[49%] h-[2px] -translate-y-1/2 bg-zinc-700" />
-                  <div
-                    className={`absolute left-[51%] right-[10%] top-[49%] h-[3px] -translate-y-1/2 transition-all duration-150 ${
-                      dropIsActive
-                        ? "bg-rose-500 shadow-[0_0_14px_rgba(244,63,94,0.9)] animate-pulse"
-                        : "bg-zinc-700"
-                    }`}
-                  />
-                  
-                  <div className="absolute left-[6%] top-[61%] w-28 -translate-x-1/2 text-center">
-                    <p className="text-sm font-semibold">n0</p>
-                    <p className="mt-1 text-xs text-zinc-400">Sender</p>
-                  </div>
+                    return (
+                      <div key={`link-${link.linkId}`}>
+                        <div
+                          className={`absolute top-[49%] -translate-y-1/2 transition-all duration-150 ${
+                            isBottleneck
+                              ? dropIsActive
+                                ? "h-[3px] bg-rose-500 shadow-[0_0_14px_rgba(244,63,94,0.9)] animate-pulse"
+                                : "h-[3px] bg-zinc-700"
+                              : "h-[2px] bg-zinc-700"
+                          }`}
+                          style={{ left: `${left}%`, width: `${width}%` }}
+                        />
 
-                  <div className="absolute left-[47%] top-[61%] w-28 -translate-x-1/2 text-center">
-                    <p className="text-sm font-semibold">n1</p>
-                    <p className="mt-1 text-xs text-zinc-400">Router</p>
-                  </div>
+                        <div className="absolute top-[37%] -translate-x-1/2 text-center" style={{ left: `${labelLeft}%` }}>
+                          <p className="text-xs text-zinc-400">{`${link.rate} / ${link.delay}`}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
 
-                  <div className="absolute right-[6%] top-[61%] w-28 translate-x-1/2 text-center">
-                    <p className="text-sm font-semibold">n2</p>
-                    <p className="mt-1 text-xs text-zinc-400">Server</p>
-                  </div>
+                  {nodeIds.map((nodeId, index) => {
+                    const left = `${nodeLeftById.get(nodeId) ?? 50}%`;
+                    const isRouter = nodeId === routerNodeId;
+                    const isFirst = index === 0;
+                    const isLast = index === nodeIds.length - 1;
+                    const role = isRouter ? "Router" : isFirst ? "Sender" : isLast ? "Server" : "Node";
 
-                  <div className="absolute left-[19%] top-[37%] -translate-x-1/2 text-center">
-                    <p className="text-xs text-zinc-400">{fastLink ? `${fastLink.rate} / ${fastLink.delay}` : "-"}</p>
-                  </div>
+                    return (
+                      <div key={`node-${nodeId}`}>
+                        <div
+                          className={`absolute top-[49%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-900 ${
+                            isRouter
+                              ? "h-10 w-10 border border-amber-500/70"
+                              : "h-8 w-8 border border-zinc-200"
+                          }`}
+                          style={{ left }}
+                        />
 
-                  <div className="absolute left-[73%] top-[37%] -translate-x-1/2 text-center">
-                    <p className="text-xs text-zinc-400">{bottleneckLink ? `${bottleneckLink.rate} / ${bottleneckLink.delay}` : "-"}</p>
-                  </div>
+                        <div className="absolute top-[61%] w-28 -translate-x-1/2 text-center" style={{ left }}>
+                          <p className="text-sm font-semibold">n{nodeId}</p>
+                          <p className="mt-1 text-xs text-zinc-400">{role}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
 
                   {packetMotions.map((motion) => {
+                    const motionLink = linkById.get(motion.linkId);
+                    if (!motionLink) {
+                      return null;
+                    }
+
+                    const fromLeft = nodeLeftById.get(motionLink.from) ?? 50;
+                    const toLeft = nodeLeftById.get(motionLink.to) ?? 50;
+                    const travel = toLeft - fromLeft;
                     const baseClasses =
                       motion.kind === "drain"
                         ? "bg-emerald-400 shadow-[0_0_18px_rgba(74,222,128,0.6)]"
                         : "bg-sky-400 shadow-[0_0_18px_rgba(56,189,248,0.6)]";
 
-                    const style =
-                      motion.linkId === fastLink?.linkId
-                        ? { left: `${10 + motion.position * 0.37}%`, top: "49%" }
-                        : { left: `${51 + motion.position * 0.39}%`, top: "49%" };
+                    const style = {
+                      left: `${fromLeft + (travel * motion.position) / 100}%`,
+                      top: "49%",
+                    };
 
                     return (
                       <div

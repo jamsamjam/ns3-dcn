@@ -2,15 +2,25 @@
 
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 
-type TraceEventType = "QUEUE_LEN_CHANGE" | "SOJOURN_TIME" | "PACKET_DROP";
-
-type TraceEvent = {
+type QueueLenChange = {
   time: number;
-  type: TraceEventType;
-  linkId?: string;
   oldPackets?: number;
   newPackets?: number;
+};
+
+type SojournSample = {
+  time: number;
   delayMs?: number;
+};
+
+type PacketDrop = {
+  time: number;
+  packetId?: number;
+  size?: number;
+};
+
+type PacketDequeue = {
+  time: number;
   packetId?: number;
   size?: number;
 };
@@ -22,13 +32,22 @@ type TraceMetrics = {
   avgSojournTime?: number;
 };
 
+type LinkTrace = {
+  queueLenChanges?: QueueLenChange[];
+  sojournSamples?: SojournSample[];
+  packetDrops?: PacketDrop[];
+  packetDequeues?: PacketDequeue[];
+  metrics?: TraceMetrics;
+};
+
 type TraceLink = {
   linkId: string;
-  fro: number;
+  from: number;
   to: number;
   rate: string;
   delay: string;
   label?: string;
+  trace?: LinkTrace;
 };
 
 type TraceData = {
@@ -37,14 +56,18 @@ type TraceData = {
   sendingRate?: string;
   simTime?: number;
   links?: TraceLink[];
-  events?: TraceEvent[];
-  metrics?: TraceMetrics;
 };
+
+type TimelineEvent =
+  | ({ type: "QUEUE_LEN_CHANGE"; linkId: string } & QueueLenChange)
+  | ({ type: "SOJOURN_TIME"; linkId: string } & SojournSample)
+  | ({ type: "PACKET_DROP"; linkId: string } & PacketDrop)
+  | ({ type: "PACKET_DEQUEUE"; linkId: string } & PacketDequeue);
 
 type QueuePoint = {
   time: number;
   packets: number;
-  raw: TraceEvent;
+  raw: TimelineEvent;
 };
 
 type PacketMotion = {
@@ -56,8 +79,8 @@ type PacketMotion = {
 
 function parseTrace(content: string): TraceData {
   const parsed = JSON.parse(content) as TraceData;
-  if (!parsed || !Array.isArray(parsed.events)) {
-    throw new Error("Invalid trace format: events array is missing.");
+  if (!parsed || !Array.isArray(parsed.links)) {
+    throw new Error("Invalid trace format: links array is missing.");
   }
   return parsed;
 }
@@ -85,58 +108,105 @@ function formatMs(value?: number): string {
   return `${value.toFixed(0)} ms`;
 }
 
-function buildPacketMotions(events: TraceEvent[], currentIndex: number): PacketMotion[] {
-  const motions: PacketMotion[] = [];
-  const windowStart = Math.max(0, currentIndex - 8);
-  const recentEvents = events.slice(windowStart, currentIndex + 1);
+function flattenTimeline(links: TraceLink[]): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
 
-  recentEvents.forEach((event, offset) => {
-    const freshness = (offset + 1) / (recentEvents.length + 1);
+  for (const link of links) {
+    const trace = link.trace;
 
-    if (event.type === "QUEUE_LEN_CHANGE") {
-      const delta = (event.newPackets ?? 0) - (event.oldPackets ?? 0);
-
-      if (delta > 0) {
-        motions.push({
-          id: `in-${windowStart + offset}-${event.time}`,
-          linkId: "n0-n1",
-          position: clamp(20 + freshness * 55, 0, 100),
-          kind: "send",
-        });
-      }
-
-      if (delta < 0) {
-        motions.push({
-          id: `out-${windowStart + offset}-${event.time}`,
-          linkId: "n1-n2",
-          position: clamp(20 + freshness * 55, 0, 100),
-          kind: "drain",
-        });
-      }
+    for (const event of trace?.queueLenChanges ?? []) {
+      events.push({
+        type: "QUEUE_LEN_CHANGE",
+        linkId: link.linkId,
+        ...event,
+      });
     }
 
-    if (event.type === "PACKET_DROP") {
+    for (const event of trace?.sojournSamples ?? []) {
+      events.push({
+        type: "SOJOURN_TIME",
+        linkId: link.linkId,
+        ...event,
+      });
+    }
+
+    for (const event of trace?.packetDrops ?? []) {
+      events.push({
+        type: "PACKET_DROP",
+        linkId: link.linkId,
+        ...event,
+      });
+    }
+
+    for (const event of trace?.packetDequeues ?? []) {
+      events.push({
+        type: "PACKET_DEQUEUE",
+        linkId: link.linkId,
+        ...event,
+      });
+    }
+  }
+
+  return events.sort((a, b) => a.time - b.time);
+}
+
+function buildPacketMotions(
+  queueEvents: QueuePoint[],
+  dequeueEvents: PacketDequeue[],
+  currentIndex: number,
+  fastLinkId: string,
+  bottleneckLinkId: string
+): PacketMotion[] {
+  const motions: PacketMotion[] = [];
+  const activeQueueTime = queueEvents[currentIndex]?.time ?? 0;
+
+  const recentQueueEvents = queueEvents
+    .filter((event) => event.time <= activeQueueTime)
+    .slice(-10);
+
+  recentQueueEvents.forEach((event, index) => {
+    const freshness = (index + 1) / Math.max(recentQueueEvents.length, 1);
+    const delta = (event.raw.newPackets ?? 0) - (event.raw.oldPackets ?? 0);
+
+    if (delta > 0) {
       motions.push({
-        id: `drop-${windowStart + offset}-${event.time}`,
-        linkId: "drop",
-        position: 8,
-        kind: "drop",
+        id: `send-${event.time}-${index}`,
+        linkId: fastLinkId,
+        position: 5 + freshness * 90,
+        kind: "send",
       });
     }
   });
 
-  return motions.slice(-14);
+  const recentDequeues = dequeueEvents
+    .filter((event) => event.time <= activeQueueTime)
+    .slice(-8);
+
+  recentDequeues.forEach((event, index) => {
+    const freshness = (index + 1) / Math.max(recentDequeues.length, 1);
+    motions.push({
+      id: `deq-${event.packetId ?? index}-${event.time}`,
+      linkId: bottleneckLinkId,
+      position: 5 + freshness * 90,
+      kind: "drain",
+    });
+  });
+
+  return motions.slice(-18);
 }
 
-function summarizeEvent(event: TraceEvent): string {
+function summarizeEvent(event: TimelineEvent): string {
   if (event.type === "QUEUE_LEN_CHANGE") {
-    return `${event.oldPackets ?? 0} → ${event.newPackets ?? 0}`;
+    return `[${event.linkId}] ${event.oldPackets ?? 0} -> ${event.newPackets ?? 0}`;
   }
   if (event.type === "SOJOURN_TIME") {
-    return `${event.delayMs ?? 0} ms queueing delay`;
+    return `[${event.linkId}] ${event.delayMs ?? 0} ms queueing delay`;
   }
   if (event.type === "PACKET_DROP") {
-    return `packet ${event.packetId ?? "?"} dropped (${event.size ?? "?"} B)`;
+    return `[${event.linkId}] packet ${event.packetId ?? "?"} dropped (${event.size ?? "?"} B)`;
+  }
+  if (event.type === "PACKET_DEQUEUE") {
+    return `[${event.linkId}] packet ${event.packetId ?? "?"} dequeued (${event.size ?? "?"} B)`;
   }
   return event.type;
 }
@@ -149,33 +219,33 @@ export default function Home() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playIndex, setPlayIndex] = useState(0);
 
-  const allEvents = trace?.events ?? [];
+  const links = trace?.links ?? [];
+  const allEvents = useMemo(() => flattenTimeline(links), [links]);
+
+  const fastLink = useMemo(() => links.find((l) => l.label === "fast") ?? links[0] ?? null, [links]);
+  const bottleneckLink = useMemo(() => links.find((l) => l.label === "bottleneck") ?? links[1] ?? null, [links]);
 
   const queueEvents = useMemo<QueuePoint[]>(() => {
-    return allEvents
-      .filter((event) => event.type === "QUEUE_LEN_CHANGE")
-      .map((event) => ({
-        time: event.time,
-        packets: event.newPackets ?? 0,
-        raw: event,
-      }));
-  }, [allEvents]);
+    const source = bottleneckLink?.trace?.queueLenChanges ?? [];
+    return source.map((event) => ({
+      time: event.time,
+      packets: event.newPackets ?? 0,
+      raw: {
+        type: "QUEUE_LEN_CHANGE" as const,
+        linkId: bottleneckLink?.linkId ?? "unknown",
+        ...event,
+      },
+    }));
+  }, [bottleneckLink]);
 
-  const sojournEvents = useMemo(() => {
-    return allEvents.filter((event) => event.type === "SOJOURN_TIME");
-  }, [allEvents]);
-
-  const dropEvents = useMemo(() => {
-    return allEvents.filter((event) => event.type === "PACKET_DROP");
-  }, [allEvents]);
+  const sojournEvents = useMemo(() => bottleneckLink?.trace?.sojournSamples ?? [], [bottleneckLink]);
+  const dropEvents = useMemo(() => bottleneckLink?.trace?.packetDrops ?? [], [bottleneckLink]);
+  const dequeueEvents = useMemo(() => bottleneckLink?.trace?.packetDequeues ?? [], [bottleneckLink]);
 
   const queueCapacity = useMemo(() => {
     const parsed = parsePacketCount(trace?.queueSize);
     return parsed ?? Math.max(...queueEvents.map((event) => event.packets), 1);
   }, [trace?.queueSize, queueEvents]);
-
-  const fastLink = useMemo(() => trace?.links?.find((l) => l.label === "fast"), [trace]);
-  const bottleneckLink = useMemo(() => trace?.links?.find((l) => l.label === "bottleneck"), [trace]);
 
   const boundedPlayIndex = Math.min(playIndex, Math.max(queueEvents.length - 1, 0));
   const activeQueuePoint = queueEvents[boundedPlayIndex] ?? null;
@@ -216,11 +286,18 @@ export default function Home() {
   }, [dropEvents, activeQueuePoint]);
 
   const packetMotions = useMemo(() => {
+    if (!fastLink || !bottleneckLink) {
+      return [];
+    }
+
     return buildPacketMotions(
-      queueEvents.map((event) => event.raw),
-      boundedPlayIndex
+      queueEvents,
+      dequeueEvents,
+      boundedPlayIndex,
+      fastLink.linkId,
+      bottleneckLink.linkId
     );
-  }, [queueEvents, boundedPlayIndex]);
+  }, [queueEvents, dequeueEvents, dropEvents, boundedPlayIndex, fastLink, bottleneckLink]);
 
   const recentEvents = useMemo(() => {
     if (!activeQueuePoint) {
@@ -236,9 +313,12 @@ export default function Home() {
     return queueEvents.filter((event) => event.time <= currentTime).slice(-30);
   }, [queueEvents, currentTime]);
 
-  const peakQueue = trace?.metrics?.maxQueueSize ?? Math.max(...queueEvents.map((event) => event.packets), 0);
-  const avgSojourn = trace?.metrics?.avgSojournTime ?? 0;
-  const packetsLost = trace?.metrics?.packetsLost ?? dropEvents.length;
+  const peakQueue =
+    bottleneckLink?.trace?.metrics?.maxQueueSize ??
+    Math.max(...queueEvents.map((event) => event.packets), 0);
+
+  const avgSojourn = bottleneckLink?.trace?.metrics?.avgSojournTime ?? 0;
+  const packetsLost = bottleneckLink?.trace?.metrics?.packetsLost ?? dropEvents.length;
   const dropIsActive = Boolean(recentDrop && currentTime - recentDrop.time < 0.4);
 
   useEffect(() => {
@@ -308,7 +388,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-50">
-      <div className="mx-auto max-w-6xl px-6 py-10 md:px-10">
+      <div className="mx-auto max-w-7xl px-6 py-10 md:px-10">
         <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-zinc-400">ns-3 visualization</p>
@@ -339,131 +419,138 @@ export default function Home() {
         </header>
 
         {!trace ? (
-          <section>
-            Load a trace to start the visualization.
-          </section>
+          <section>Load a trace to start the visualization.</section>
         ) : (
           <div className="space-y-6">
             <section>
-              <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div />
-                <div className="flex flex-wrap items-center gap-2">
+              <div className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950/80 p-6 md:p-8">
+                <div className="absolute top-4 right-6 flex gap-4 z-10">
                   <button
                     onClick={() => {
-                      if (!queueEvents.length) {
-                        return;
-                      }
+                      if (!queueEvents.length) return;
                       setIsPlaying((prev) => !prev);
                     }}
-                    className="rounded-xl bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-white"
+                    className="text-xl text-zinc-300 hover:text-white transition"
                   >
-                    {isPlaying ? "Pause" : "Play"}
+                    {isPlaying ? "⏸" : "⏵"}
                   </button>
+
                   <button
                     onClick={() => {
                       setIsPlaying(false);
                       setPlayIndex(0);
                     }}
-                    className="rounded-xl border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-800"
+                    className="text-xl text-zinc-300 hover:text-white transition"
                   >
-                    Reset
+                    ⏹
                   </button>
                 </div>
-              </div>
 
-              <div className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950/80 p-6">
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-[1fr_1.2fr_1fr] md:items-center">
-                  <div className="rounded-3xl border border-white p-5 text-center">
-                    <p className="mt-3 text-xl font-semibold">Sender (n0)</p>
-                    <p className="mt-2 text-sm text-zinc-300">
-                      {fastLink ? `${fastLink.rate} / ${fastLink.delay}` : "-"}
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-500">app rate {trace.sendingRate ?? "-"}</p>
-                  </div>
+                <div className="relative hidden h-[320px] md:block">
+                  <div className="absolute left-[6%] top-[49%] h-8 w-8 -translate-y-1/2 rounded-full border border-zinc-200 bg-zinc-900" />
+                  <div className="absolute left-[47%] top-[49%] h-10 w-10 -translate-y-1/2 rounded-full border border-amber-500/70 bg-zinc-900" />
+                  <div className="absolute right-[6%] top-[49%] h-8 w-8 -translate-y-1/2 rounded-full border border-zinc-200 bg-zinc-900" />
 
+                  <div className="absolute left-[10%] right-[56%] top-[49%] h-[2px] -translate-y-1/2 bg-zinc-700" />
                   <div
-                    className={`rounded-3xl border p-5 transition ${
-                      dropIsActive ? "border-rose-500/70 bg-rose-950/20" : "border-amber-700/50 bg-amber-950/10"
+                    className={`absolute left-[51%] right-[10%] top-[49%] h-[3px] -translate-y-1/2 transition-all duration-150 ${
+                      dropIsActive
+                        ? "bg-rose-500 shadow-[0_0_14px_rgba(244,63,94,0.9)] animate-pulse"
+                        : "bg-zinc-700"
                     }`}
-                  >
-                    <div className="text-center">
-                      <p className="mt-3 text-xl font-semibold">Router (n1)</p>
-                      <p className="mt-2 text-sm text-zinc-300">
-                        {bottleneckLink ? `${bottleneckLink.rate} / ${bottleneckLink.delay}` : "-"}
-                      </p>
-                    </div>
-
-                    <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
-                      <div className="mb-2 flex items-center justify-between text-xs text-zinc-400">
-                        <span>occupancy</span>
-                        <span>{activePackets} / {queueCapacity}</span>
-                      </div>
-                      <div className="h-4 overflow-hidden rounded-full bg-zinc-800">
-                        <div
-                          className={`h-full rounded-full transition-all duration-100 ${
-                            queueUtilization > 95
-                              ? "bg-rose-500"
-                              : queueUtilization > 75
-                                ? "bg-amber-400"
-                                : "bg-emerald-400"
-                          }`}
-                          style={{ width: `${queueUtilization}%` }}
-                        />
-                      </div>
-                      <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-                        <div className="rounded-xl bg-zinc-900 p-2">
-                          <p className="text-zinc-500">change</p>
-                          <p className="mt-1 font-medium text-zinc-100">
-                            {activeRawEvent ? `${activeRawEvent.oldPackets ?? 0} → ${activeRawEvent.newPackets ?? 0}` : "-"}
-                          </p>
-                        </div>
-                        <div className="rounded-xl bg-zinc-900 p-2">
-                          <p className="text-zinc-500">delay</p>
-                          <p className="mt-1 font-medium text-zinc-100">{formatMs(nearestSojourn?.delayMs)}</p>
-                        </div>
-                        <div className="rounded-xl bg-zinc-900 p-2">
-                          <p className="text-zinc-500">drop</p>
-                          <p className="mt-1 font-medium text-zinc-100">{dropIsActive ? "yes" : "no"}</p>
-                        </div>
-                      </div>
-                    </div>
+                  />
+                  
+                  <div className="absolute left-[6%] top-[61%] w-28 -translate-x-1/2 text-center">
+                    <p className="text-sm font-semibold">n0</p>
+                    <p className="mt-1 text-xs text-zinc-400">Sender</p>
                   </div>
 
-                  <div className="rounded-3xl border border-white p-5 text-center">
-                    <p className="mt-3 text-xl font-semibold">Server (n2)</p>
-                    <p className="mt-2 text-sm text-zinc-300">receives drained packets</p>
-                    <p className="mt-1 text-xs text-zinc-500">sojourn {formatMs(nearestSojourn?.delayMs)}</p>
+                  <div className="absolute left-[47%] top-[61%] w-28 -translate-x-1/2 text-center">
+                    <p className="text-sm font-semibold">n1</p>
+                    <p className="mt-1 text-xs text-zinc-400">Router</p>
+                  </div>
+
+                  <div className="absolute right-[6%] top-[61%] w-28 translate-x-1/2 text-center">
+                    <p className="text-sm font-semibold">n2</p>
+                    <p className="mt-1 text-xs text-zinc-400">Server</p>
+                  </div>
+
+                  <div className="absolute left-[19%] top-[37%] -translate-x-1/2 text-center">
+                    <p className="text-xs text-zinc-400">{fastLink ? `${fastLink.rate} / ${fastLink.delay}` : "-"}</p>
+                  </div>
+
+                  <div className="absolute left-[73%] top-[37%] -translate-x-1/2 text-center">
+                    <p className="text-xs text-zinc-400">{bottleneckLink ? `${bottleneckLink.rate} / ${bottleneckLink.delay}` : "-"}</p>
+                  </div>
+
+                  {packetMotions.map((motion) => {
+                    const baseClasses =
+                      motion.kind === "drain"
+                        ? "bg-emerald-400 shadow-[0_0_18px_rgba(74,222,128,0.6)]"
+                        : "bg-sky-400 shadow-[0_0_18px_rgba(56,189,248,0.6)]";
+
+                    const style =
+                      motion.linkId === fastLink?.linkId
+                        ? { left: `${10 + motion.position * 0.37}%`, top: "49%" }
+                        : { left: `${51 + motion.position * 0.39}%`, top: "49%" };
+
+                    return (
+                      <div
+                        key={motion.id}
+                        className={`absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full ${baseClasses}`}
+                        style={style}
+                      />
+                    );
+                  })}
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:hidden">
+                  <div className="rounded-2xl border border-zinc-800 p-4 text-center">
+                    <p className="font-semibold">n0 → n1</p>
+                    <p className="mt-1 text-sm text-zinc-400">{fastLink ? `${fastLink.rate} / ${fastLink.delay}` : "-"}</p>
+                  </div>
+                  <div className="rounded-2xl border border-zinc-800 p-4 text-center">
+                    <p className="font-semibold">n1 → n2</p>
+                    <p className="mt-1 text-sm text-zinc-400">{bottleneckLink ? `${bottleneckLink.rate} / ${bottleneckLink.delay}` : "-"}</p>
                   </div>
                 </div>
 
-                <div className="pointer-events-none absolute left-[14%] right-[14%] top-1/2 hidden -translate-y-1/2 md:block">
-                  <div className="relative h-24">
-                    <div className="absolute left-[7%] right-[52%] top-1/2 h-[2px] -translate-y-1/2 bg-zinc-700" />
-                    <div className="absolute left-[52%] right-[7%] top-1/2 h-[2px] -translate-y-1/2 bg-zinc-700" />
+                <div className="mt-6 grid gap-3 md:grid-cols-4">
+                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
+                    <p className="text-xs tracking-[0.2em] text-zinc-500">Current queue</p>
+                    <p className="mt-2 text-lg font-semibold">{activePackets}</p>
+                    <p className="mt-1 text-xs text-zinc-400">{currentTime.toFixed(3)} s</p>
+                  </div>
 
-                    {packetMotions.map((motion) => {
-                      const baseClasses =
-                        motion.kind === "drop"
-                          ? "bg-rose-500 shadow-[0_0_18px_rgba(244,63,94,0.8)]"
-                          : motion.kind === "drain"
-                            ? "bg-emerald-400 shadow-[0_0_18px_rgba(74,222,128,0.6)]"
-                            : "bg-sky-400 shadow-[0_0_18px_rgba(56,189,248,0.6)]";
+                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
+                    <p className="text-xs tracking-[0.2em] text-zinc-500">Queue utilization</p>
+                    <p className="mt-2 text-lg font-semibold">{queueUtilization.toFixed(0)}%</p>
+                    <div className="mt-3 h-3 overflow-hidden rounded-full bg-zinc-800">
+                      <div
+                        className={`h-full rounded-full transition-all duration-100 ${
+                          queueUtilization > 95
+                            ? "bg-rose-500"
+                            : queueUtilization > 75
+                              ? "bg-amber-400"
+                              : "bg-emerald-400"
+                        }`}
+                        style={{ width: `${queueUtilization}%` }}
+                      />
+                    </div>
+                  </div>
 
-                      const style =
-                        motion.linkId === "n0-n1"
-                          ? { left: `${motion.position}%`, top: "33%" }
-                          : motion.linkId === "n1-n2"
-                            ? { left: `${50 + motion.position / 2}%`, top: "66%" }
-                            : { left: "50%", top: "10%" }; // drop bubble above router
+                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
+                    <p className="text-xs tracking-[0.2em] text-zinc-500">Sojourn</p>
+                    <p className="mt-2 text-lg font-semibold">{formatMs(nearestSojourn?.delayMs)}</p>
+                    <p className="mt-1 text-xs text-zinc-400">avg {formatMs(avgSojourn)}</p>
+                  </div>
 
-                      return (
-                        <div
-                          key={motion.id}
-                          className={`absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full ${baseClasses}`}
-                          style={style}
-                        />
-                      );
-                    })}
+                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
+                    <p className="text-xs tracking-[0.2em] text-zinc-500">Drops</p>
+                    <p className="mt-2 text-lg font-semibold">{packetsLost}</p>
+                    <p className={`mt-1 text-xs ${dropIsActive ? "text-rose-400" : "text-zinc-400"}`}>
+                      {dropIsActive ? "drop active" : "stable"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -471,6 +558,9 @@ export default function Home() {
               <div className="mt-6 space-y-2">
                 <div className="flex items-center justify-between text-xs text-zinc-400">
                   <span>{currentTime.toFixed(3)}s</span>
+                  <span>
+                    peak {peakQueue} pkt / cap {queueCapacity}
+                  </span>
                 </div>
                 <input
                   type="range"
@@ -498,7 +588,7 @@ export default function Home() {
                   <p className="text-sm text-zinc-500">No queue events yet.</p>
                 ) : (
                   <div className="space-y-3">
-                    <div className="flex h-44 items-end gap-[2px] rounded-2xl border border-zinc-800 bg-zinc-950/70 p-3">
+                    <div className="flex h-50 items-end gap-[2px] rounded-2xl border border-zinc-800 bg-zinc-950/70 p-3">
                       {queueTrend.map((event, index) => {
                         const height = `${Math.max((event.packets / Math.max(queueCapacity, 1)) * 100, 2)}%`;
                         const isActive = index === queueTrend.length - 1;
@@ -512,40 +602,27 @@ export default function Home() {
                         );
                       })}
                     </div>
-
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <div className="rounded-2xl bg-zinc-950/70 p-4">
-                        <p className="text-xs tracking-[0.2em] text-zinc-500">Current queue</p>
-                        <p className="mt-2 text-lg font-semibold">{activePackets}</p>
-                      </div>
-                      <div className="rounded-2xl bg-zinc-950/70 p-4">
-                        <p className="text-xs tracking-[0.2em] text-zinc-500">Current sojourn</p>
-                        <p className="mt-2 text-lg font-semibold">{nearestSojourn?.delayMs?.toFixed(0) ?? "-"}</p>
-                      </div>
-                      <div className="rounded-2xl bg-zinc-950/70 p-4">
-                        <p className="text-xs tracking-[0.2em] text-zinc-500">Recent drop</p>
-                        <p className="mt-2 text-lg font-semibold">{recentDrop ? recentDrop.packetId ?? "yes" : "-"}</p>
-                      </div>
-                    </div>
                   </div>
                 )}
               </article>
 
               <article>
-                <div className="mt-4 max-h-70 space-y-2 overflow-y-hidden pr-1">
+                <div className="mt-4 max-h-80 space-y-2 overflow-y-auto pr-1">
                   {recentEvents.length === 0 ? (
                     <p className="text-sm text-zinc-500">No events visible.</p>
                   ) : (
                     recentEvents.map((event, index) => {
                       return (
                         <div
-                          key={`${event.type}-${event.time}-${index}`}
+                          key={`${event.type}-${event.linkId}-${event.time}-${index}`}
+                          className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-3"
                         >
                           <div className="flex items-center justify-between gap-3">
                             <p className="text-xs font-normal text-zinc-100">{event.type}</p>
                             <p className="font-mono text-xs text-zinc-500">{event.time.toFixed(4)}s</p>
                           </div>
-                          <p className="mt-1 text-sm text-zinc-400">{summarizeEvent(event)}</p>
+                          <p className="mt-1 text-xs text-zinc-500">{event.linkId}</p>
+                          <p className="mt-2 text-sm text-zinc-400">{summarizeEvent(event)}</p>
                         </div>
                       );
                     })

@@ -12,6 +12,3 @@ note.md
 .ns3rc
 cmake-cache/
 build/
-
-frontend/public/*.json
-

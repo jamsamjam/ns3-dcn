@@ -179,7 +179,6 @@ main(int argc, char* argv[])
 
     CommandLine cmd(__FILE__);
     cmd.AddValue("config", "Topology config file", configFilename);
-    cmd.AddValue("csvDir", "Directory for csv output", csvDir);
     cmd.AddValue("queueSize", "Max queue size", queueSizeStr);
     cmd.AddValue("rate", "Application sending rate", sendingRateStr);
     cmd.AddValue("tcp", "TCP variant", tcpType);

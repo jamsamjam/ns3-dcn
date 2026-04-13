@@ -12,6 +12,16 @@
 
 using namespace ns3;
 
+/*
+- NOTE related to https://www.nsnam.org/docs/tutorial/html/tracing.html:
+
+callback -> like `<button onClick={handleClick} />` in react
+
+int (*pfi)(int); // pfi is a pointer to a function
+*pfi // the function pointed to by pfi
+&pfi // the address of the pointer pfi
+*/
+
 /**
  * Tutorial 4 - a simple Object to show how to hook a trace.
  */
@@ -53,7 +63,7 @@ main(int argc, char* argv[])
 {
     Ptr<MyObject> myObject = CreateObject<MyObject>();
     myObject->TraceConnectWithoutContext("MyInteger", MakeCallback(&IntTrace));
-    // Normally, we don't need to specify the trace source using Config::Connect
+    // Normally, we don't need to specify the trace source using Config::Connect if you have the object
 
     myObject->m_myInt = 1234;
 

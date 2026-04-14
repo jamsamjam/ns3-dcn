@@ -45,7 +45,8 @@ struct LinkInfo
 struct PacketArrivalInfo
 {
     uint32_t size = 0;
-    double arrivalTime = 0.0;
+    double enqueueTime = 0.0;
+    bool logged = false;
 };
 
 struct LinkTraceData
@@ -131,9 +132,11 @@ ArrivalTrace(std::string linkId, Ptr<const QueueDiscItem> item)
 
     PacketArrivalInfo info;
     info.size = packet->GetSize();
-    info.arrivalTime = Simulator::Now().GetSeconds();
+    info.enqueueTime = Simulator::Now().GetSeconds();
 
-    tracesByLink[linkId].arrivals[packet->GetUid()] = info;
+    // try_emplace: only insert if uid not already present.
+    // The first enqueue is canonical; ignore any duplicate enqueue events.
+    tracesByLink[linkId].arrivals.try_emplace(packet->GetUid(), info);
 }
 
 static void
@@ -143,29 +146,26 @@ DequeueTrace(std::string linkId, Ptr<const QueueDiscItem> item)
     auto& trace = tracesByLink[linkId];
 
     uint64_t id = packet->GetUid();
-    double arrivingTime = Simulator::Now().GetSeconds();
+    double dequeueTime = Simulator::Now().GetSeconds();
 
     auto it = trace.arrivals.find(id);
-    if (it == trace.arrivals.end())
+    if (it == trace.arrivals.end() || it->second.logged)
     {
         return;
     }
 
-    const uint32_t size = it->second.size;
-    const double arrivalTime = it->second.arrivalTime;
+    it->second.logged = true;
 
     if (g_csvLogger != nullptr)
     {
-        g_csvLogger->Log(linkId, CsvLogger::Row{id, size, arrivalTime, arrivingTime});
+        g_csvLogger->Log(linkId, CsvLogger::Row{id, it->second.size, it->second.enqueueTime, dequeueTime});
     }
-
-    trace.arrivals.erase(it);
 }
 
 int
 main(int argc, char* argv[])
 {
-    std::string configFilename = "config/simple-topology.json";
+    std::string configFilename = "scratch/config/simple-topology.json";
     std::string topologyName;
     std::string csvDir = "../backend/output";
 

@@ -25,6 +25,12 @@ type PacketDequeue = {
   size?: number;
 };
 
+type PacketArrival = {
+  time: number;
+  packetId?: number;
+  size?: number;
+};
+
 type TraceMetrics = {
   maxQueueSize?: number;
   packetsLost?: number;
@@ -37,6 +43,7 @@ type LinkTrace = {
   sojournSamples?: SojournSample[];
   packetDrops?: PacketDrop[];
   packetDequeues?: PacketDequeue[];
+  packetArrivals?: PacketArrival[];
   metrics?: TraceMetrics;
 };
 
@@ -58,31 +65,109 @@ type TraceData = {
   links?: TraceLink[];
 };
 
+type TopologyConfig = {
+  topology?: string;
+  links?: TraceLink[];
+};
+
 type TimelineEvent =
   | ({ type: "QUEUE_LEN_CHANGE"; linkId: string } & QueueLenChange)
   | ({ type: "SOJOURN_TIME"; linkId: string } & SojournSample)
   | ({ type: "PACKET_DROP"; linkId: string } & PacketDrop)
+  | ({ type: "PACKET_ARRIVAL"; linkId: string } & PacketArrival)
   | ({ type: "PACKET_DEQUEUE"; linkId: string } & PacketDequeue);
 
 type QueuePoint = {
   time: number;
   packets: number;
-  raw: TimelineEvent;
+  raw: Extract<TimelineEvent, { type: "QUEUE_LEN_CHANGE" }>;
 };
 
 type PacketMotion = {
   id: string;
   linkId: string;
   position: number;
-  kind: "send" | "drain" | "drop";
+  kind: "send" | "drain" | "egress" | "drop";
 };
 
-function parseTrace(content: string): TraceData {
-  const parsed = JSON.parse(content) as TraceData;
-  if (!parsed || !Array.isArray(parsed.links)) {
-    throw new Error("Invalid trace format: links array is missing.");
+type RouterPanelStats = {
+  hasData: boolean;
+  currentPackets: number;
+  queueUtilization: number;
+  sojournMs?: number;
+  drops: number;
+  dropIsActive: boolean;
+};
+
+type PacketRow = {
+  id: number;
+  size: number;
+  enqueueTime: number;
+  dequeueTime: number;
+};
+
+function parseCsv(text: string): PacketRow[] {
+  const lines = text.trim().split("\n");
+  if (lines.length < 2) return [];
+  const rows: PacketRow[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const parts = lines[i].split(",");
+    if (parts.length < 4) continue;
+    const id = Number(parts[0]);
+    const size = Number(parts[1]);
+    const enqueueTime = Number(parts[2]);
+    const dequeueTime = Number(parts[3]);
+    if (!Number.isFinite(id) || !Number.isFinite(size) || !Number.isFinite(enqueueTime) || !Number.isFinite(dequeueTime)) continue;
+    rows.push({ id, size, enqueueTime, dequeueTime });
   }
-  return parsed;
+  return rows;
+}
+
+function deriveLinkTrace(rows: PacketRow[]): LinkTrace {
+  if (rows.length === 0) return {};
+
+  const packetArrivals: PacketArrival[] = rows.map((r) => ({
+    time: r.enqueueTime,
+    packetId: r.id,
+    size: r.size,
+  }));
+
+  const packetDequeues: PacketDequeue[] = rows.map((r) => ({
+    time: r.dequeueTime,
+    packetId: r.id,
+    size: r.size,
+  }));
+
+  const sojournSamples: SojournSample[] = rows.map((r) => ({
+    time: r.dequeueTime,
+    delayMs: (r.dequeueTime - r.enqueueTime) * 1000,
+  }));
+
+  // Derive queue depth: enqueue = +1, dequeue = -1; enqueues before dequeues at same time
+  type QueueEvent = { time: number; delta: 1 | -1 };
+  const events: QueueEvent[] = [
+    ...rows.map((r) => ({ time: r.enqueueTime, delta: 1 as const })),
+    ...rows.map((r) => ({ time: r.dequeueTime, delta: -1 as const })),
+  ].sort((a, b) => a.time - b.time || b.delta - a.delta);
+
+  const queueLenChanges: QueueLenChange[] = [];
+  let depth = 0;
+  for (const ev of events) {
+    const old = depth;
+    depth = Math.max(depth + ev.delta, 0);
+    queueLenChanges.push({ time: ev.time, oldPackets: old, newPackets: depth });
+  }
+
+  const avgSojournTime =
+    sojournSamples.reduce((sum, s) => sum + (s.delayMs ?? 0), 0) / sojournSamples.length;
+
+  return {
+    packetArrivals,
+    packetDequeues,
+    sojournSamples,
+    queueLenChanges,
+    metrics: { packetsQueued: rows.length, avgSojournTime },
+  };
 }
 
 function parsePacketCount(value?: string): number | null {
@@ -95,6 +180,61 @@ function parsePacketCount(value?: string): number | null {
   }
   const n = Number.parseInt(match[1], 10);
   return Number.isFinite(n) ? n : null;
+}
+
+function parseRateMbps(value?: string): number | null {
+  if (!value) {
+    return null;
+  }
+  const match = value.match(/([\d.]+)/);
+  if (!match) {
+    return null;
+  }
+  const numeric = Number.parseFloat(match[1]);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return null;
+  }
+  const lower = value.toLowerCase();
+  if (lower.includes("gbps")) {
+    return numeric * 1000;
+  }
+  if (lower.includes("kbps")) {
+    return numeric / 1000;
+  }
+  return numeric;
+}
+
+function parseDelayMs(value?: string): number | null {
+  if (!value) {
+    return null;
+  }
+  const match = value.match(/([\d.]+)/);
+  if (!match) {
+    return null;
+  }
+  const numeric = Number.parseFloat(match[1]);
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    return null;
+  }
+  const lower = value.toLowerCase();
+  if (lower.includes("s") && !lower.includes("ms")) {
+    return numeric * 1000;
+  }
+  return numeric;
+}
+
+function estimateTravelSeconds(link: TraceLink | null, fallbackSeconds: number): number {
+  if (!link) {
+    return fallbackSeconds;
+  }
+
+  const rateMbps = parseRateMbps(link.rate) ?? 5;
+  const delayMs = parseDelayMs(link.delay) ?? 10;
+
+  // Higher bandwidth -> faster motion, higher delay -> slower motion.
+  const fromRate = 0.035 + 0.28 / Math.max(rateMbps, 0.2);
+  const fromDelay = (delayMs / 1000) * 0.55;
+  return clamp(fromRate + fromDelay, 0.05, 0.8);
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -138,6 +278,14 @@ function flattenTimeline(links: TraceLink[]): TimelineEvent[] {
       });
     }
 
+    for (const event of trace?.packetArrivals ?? []) {
+      events.push({
+        type: "PACKET_ARRIVAL",
+        linkId: link.linkId,
+        ...event,
+      });
+    }
+
     for (const event of trace?.packetDequeues ?? []) {
       events.push({
         type: "PACKET_DEQUEUE",
@@ -150,49 +298,132 @@ function flattenTimeline(links: TraceLink[]): TimelineEvent[] {
   return events.sort((a, b) => a.time - b.time);
 }
 
+function inferBottleneckLink(links: TraceLink[]): TraceLink | null {
+  if (links.length === 0) {
+    return null;
+  }
+
+  let best: TraceLink | null = null;
+  let bestScore = Number.NEGATIVE_INFINITY;
+
+  for (const link of links) {
+    const queueEvents = link.trace?.queueLenChanges ?? [];
+    const drops = link.trace?.packetDrops ?? [];
+    const sojourn = link.trace?.sojournSamples ?? [];
+    const rateMbps = parseRateMbps(link.rate) ?? 100;
+    const delayMs = parseDelayMs(link.delay) ?? 0;
+
+    const peakQueue = queueEvents.reduce((max, event) => Math.max(max, event.newPackets ?? 0), 0);
+    const avgSojourn = sojourn.length > 0
+      ? sojourn.reduce((sum, sample) => sum + (sample.delayMs ?? 0), 0) / sojourn.length
+      : 0;
+
+    // Prioritize links that actually exhibit congestion signs.
+    const bottleneckLikeRate = 18 / Math.max(rateMbps, 0.1);
+    const bottleneckLikeDelay = delayMs * 0.22;
+    const score =
+      peakQueue * 3 +
+      drops.length * 12 +
+      avgSojourn * 0.08 +
+      (queueEvents.length > 0 ? 1 : 0) +
+      bottleneckLikeRate +
+      bottleneckLikeDelay;
+
+    if (score > bestScore) {
+      best = link;
+      bestScore = score;
+    }
+  }
+
+  if (bestScore <= 0) {
+    return links[Math.floor((links.length - 1) / 2)] ?? links[0] ?? null;
+  }
+
+  return best;
+}
+
 function buildPacketMotions(
   queueEvents: QueuePoint[],
+  arrivalEvents: PacketArrival[],
   dequeueEvents: PacketDequeue[],
-  currentIndex: number,
-  fastLinkId: string,
-  bottleneckLinkId: string
+  currentTime: number,
+  ingressLinkId: string,
+  bottleneckLinkId: string,
+  egressLinkId: string | null,
+  currentPackets: number,
+  sendTravelSeconds: number,
+  drainTravelSeconds: number,
+  egressTravelSeconds: number
 ): PacketMotion[] {
   const motions: PacketMotion[] = [];
-  const activeQueueTime = queueEvents[currentIndex]?.time ?? 0;
+  const activeTime = currentTime;
+  const queueWindowSeconds = 0.8;
+  const dequeueWindowSeconds = 0.8;
+  const arrivalWindowSeconds = 0.8;
 
-  const recentQueueEvents = queueEvents
-    .filter((event) => event.time <= activeQueueTime)
-    .slice(-10);
+  const recentQueueEvents = queueEvents.filter(
+    (event) => event.time <= activeTime && activeTime - event.time <= queueWindowSeconds
+  );
+  const arrivalBursts = arrivalEvents.filter(
+    (event) => event.time <= activeTime && activeTime - event.time <= arrivalWindowSeconds
+  ).length;
 
-  recentQueueEvents.forEach((event, index) => {
-    const freshness = (index + 1) / Math.max(recentQueueEvents.length, 1);
+  const queueBursts = recentQueueEvents.reduce((acc, event) => {
     const delta = (event.raw.newPackets ?? 0) - (event.raw.oldPackets ?? 0);
+    return acc + Math.max(delta, 0);
+  }, 0);
 
-    if (delta > 0) {
-      motions.push({
-        id: `send-${event.time}-${index}`,
-        linkId: fastLinkId,
-        position: 5 + freshness * 90,
-        kind: "send",
-      });
-    }
-  });
+  const enqueueBursts = Math.max(arrivalBursts, queueBursts);
 
-  const recentDequeues = dequeueEvents
-    .filter((event) => event.time <= activeQueueTime)
-    .slice(-8);
+  const recentDequeues = dequeueEvents.filter(
+    (event) => event.time <= activeTime && activeTime - event.time <= dequeueWindowSeconds
+  );
 
-  recentDequeues.forEach((event, index) => {
-    const freshness = (index + 1) / Math.max(recentDequeues.length, 1);
+  // Show ingress animation when packets are flowing even if the queue is transiently empty
+  // (happens when enqueue+dequeue occur at the same simulation timestamp).
+  const sendCount = currentPackets > 0 || enqueueBursts > 0
+    ? clamp(Math.round(currentPackets / 12) + Math.min(Math.max(enqueueBursts, 2), 4), 1, 8)
+    : 0;
+  const drainCount = recentDequeues.length > 0
+    ? clamp(Math.round(recentDequeues.length / 2), 1, 7)
+    : 0;
+
+  const sendBasePhase = (activeTime / sendTravelSeconds) % 1;
+  for (let i = 0; i < sendCount; i += 1) {
+    const phase = (sendBasePhase + i / Math.max(sendCount, 1)) % 1;
     motions.push({
-      id: `deq-${event.packetId ?? index}-${event.time}`,
+      id: `send-stream-${i}`,
+      linkId: ingressLinkId,
+      position: 5 + phase * 90,
+      kind: "send",
+    });
+  }
+
+  const drainBasePhase = (activeTime / drainTravelSeconds) % 1;
+  for (let i = 0; i < drainCount; i += 1) {
+    const phase = (drainBasePhase + i / Math.max(drainCount, 1)) % 1;
+    motions.push({
+      id: `drain-stream-${i}`,
       linkId: bottleneckLinkId,
-      position: 5 + freshness * 90,
+      position: 5 + phase * 90,
       kind: "drain",
     });
-  });
+  }
 
-  return motions.slice(-18);
+  if (egressLinkId && drainCount > 0) {
+    const egressBasePhase = (activeTime / egressTravelSeconds) % 1;
+    for (let i = 0; i < drainCount; i += 1) {
+      const phase = (egressBasePhase + i / Math.max(drainCount, 1)) % 1;
+      motions.push({
+        id: `egress-stream-${i}`,
+        linkId: egressLinkId,
+        position: 5 + phase * 90,
+        kind: "egress",
+      });
+    }
+  }
+
+  return motions;
 }
 
 function summarizeEvent(event: TimelineEvent): string {
@@ -205,25 +436,128 @@ function summarizeEvent(event: TimelineEvent): string {
   if (event.type === "PACKET_DROP") {
     return `[${event.linkId}] packet ${event.packetId ?? "?"} dropped (${event.size ?? "?"} B)`;
   }
+  if (event.type === "PACKET_ARRIVAL") {
+    return `[${event.linkId}] packet ${event.packetId ?? "?"} arrived (${event.size ?? "?"} B)`;
+  }
   if (event.type === "PACKET_DEQUEUE") {
     return `[${event.linkId}] packet ${event.packetId ?? "?"} dequeued (${event.size ?? "?"} B)`;
   }
-  return event.type;
+  return "";
 }
 
 export default function Home() {
-  const [sourceUrl, setSourceUrl] = useState("/simple.json");
+  const [sourceUrl, setSourceUrl] = useState("http://localhost:8000");
   const [trace, setTrace] = useState<TraceData | null>(null);
+  const [topologyConfig, setTopologyConfig] = useState<TopologyConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playIndex, setPlayIndex] = useState(0);
 
-  const links = useMemo(() => trace?.links ?? [], [trace?.links]);
+  const links = useMemo(() => {
+    const traceLinks = trace?.links ?? [];
+    const configLinks = topologyConfig?.links ?? [];
+
+    if (traceLinks.length === 0) {
+      return configLinks;
+    }
+    if (configLinks.length === 0) {
+      return traceLinks;
+    }
+
+    const traceById = new Map(traceLinks.map((link) => [link.linkId, link]));
+    const merged = configLinks.map((configLink) => {
+      const traced = traceById.get(configLink.linkId);
+      if (!traced) {
+        return configLink;
+      }
+      return {
+        ...configLink,
+        ...traced,
+        trace: traced.trace ?? configLink.trace,
+      };
+    });
+
+    const existingIds = new Set(merged.map((link) => link.linkId));
+    const traceOnly = traceLinks.filter((link) => !existingIds.has(link.linkId));
+
+    return [...merged, ...traceOnly];
+  }, [trace?.links, topologyConfig?.links]);
   const allEvents = useMemo(() => flattenTimeline(links), [links]);
 
-  const fastLink = useMemo(() => links.find((l) => l.label === "fast") ?? links[0] ?? null, [links]);
-  const bottleneckLink = useMemo(() => links.find((l) => l.label === "bottleneck") ?? links[1] ?? null, [links]);
+  const bottleneckLink = useMemo(() => inferBottleneckLink(links), [links]);
+  const routerNodeId = useMemo(() => {
+    if (!bottleneckLink) {
+      return 1;
+    }
+
+    const candidates = [bottleneckLink.from, bottleneckLink.to];
+    const shared = candidates.find((nodeId) =>
+      links.some(
+        (link) =>
+          link.linkId !== bottleneckLink.linkId &&
+          (link.from === nodeId || link.to === nodeId)
+      )
+    );
+
+    return shared ?? bottleneckLink.from;
+  }, [links, bottleneckLink]);
+
+  const ingressLink = useMemo(() => {
+    if (!bottleneckLink) {
+      return links[0] ?? null;
+    }
+
+    const incoming = links.find((link) => link.to === routerNodeId && link.linkId !== bottleneckLink.linkId);
+    if (incoming) {
+      return incoming;
+    }
+
+    const adjacentToRouter = links.filter(
+      (link) =>
+        link.linkId !== bottleneckLink.linkId &&
+        (link.from === routerNodeId || link.to === routerNodeId)
+    );
+
+    if (adjacentToRouter.length === 0) {
+      return links[0] ?? null;
+    }
+
+    // Prefer edge-like endpoints (degree 1) as ingress source candidates.
+    const withEndpointPriority = adjacentToRouter
+      .map((link) => {
+        const otherNode = link.from === routerNodeId ? link.to : link.from;
+        const otherDegree = links.reduce((count, l) => {
+          if (l.from === otherNode || l.to === otherNode) {
+            return count + 1;
+          }
+          return count;
+        }, 0);
+        return { link, otherDegree };
+      })
+      .sort((a, b) => a.otherDegree - b.otherDegree);
+
+    return withEndpointPriority[0]?.link ?? adjacentToRouter[0] ?? null;
+  }, [links, bottleneckLink, routerNodeId]);
+
+  const egressLink = useMemo(() => {
+    if (!bottleneckLink) {
+      return null;
+    }
+
+    const outgoing = links.find((link) => link.from === bottleneckLink.to && link.linkId !== bottleneckLink.linkId);
+    if (outgoing) {
+      return outgoing;
+    }
+
+    const adjacentToBottleneckDst = links.filter(
+      (link) =>
+        link.linkId !== bottleneckLink.linkId &&
+        (link.from === bottleneckLink.to || link.to === bottleneckLink.to)
+    );
+
+    return adjacentToBottleneckDst[0] ?? null;
+  }, [links, bottleneckLink]);
 
   const queueEvents = useMemo<QueuePoint[]>(() => {
     const source = bottleneckLink?.trace?.queueLenChanges ?? [];
@@ -238,8 +572,27 @@ export default function Home() {
     }));
   }, [bottleneckLink]);
 
-  const sojournEvents = useMemo(() => bottleneckLink?.trace?.sojournSamples ?? [], [bottleneckLink]);
+  const bottleneckTimeline = useMemo(() => {
+    if (!bottleneckLink?.trace) {
+      return [] as number[];
+    }
+
+    const times = [
+      ...(bottleneckLink.trace.queueLenChanges ?? []).map((event) => event.time),
+      ...(bottleneckLink.trace.sojournSamples ?? []).map((event) => event.time),
+      ...(bottleneckLink.trace.packetDrops ?? []).map((event) => event.time),
+      ...(bottleneckLink.trace.packetDequeues ?? []).map((event) => event.time),
+    ];
+
+    if (times.length === 0) {
+      return [] as number[];
+    }
+
+    return Array.from(new Set(times)).sort((a, b) => a - b);
+  }, [bottleneckLink]);
+
   const dropEvents = useMemo(() => bottleneckLink?.trace?.packetDrops ?? [], [bottleneckLink]);
+  const arrivalEvents = useMemo(() => bottleneckLink?.trace?.packetArrivals ?? [], [bottleneckLink]);
   const dequeueEvents = useMemo(() => bottleneckLink?.trace?.packetDequeues ?? [], [bottleneckLink]);
 
   const queueCapacity = useMemo(() => {
@@ -247,30 +600,13 @@ export default function Home() {
     return parsed ?? Math.max(...queueEvents.map((event) => event.packets), 1);
   }, [trace?.queueSize, queueEvents]);
 
-  const boundedPlayIndex = Math.min(playIndex, Math.max(queueEvents.length - 1, 0));
-  const activeQueuePoint = queueEvents[boundedPlayIndex] ?? null;
+  const boundedPlayIndex = Math.min(playIndex, Math.max(bottleneckTimeline.length - 1, 0));
+  const currentTime = bottleneckTimeline[boundedPlayIndex] ?? 0;
+
+  const activeQueuePoint = [...queueEvents]
+    .filter((event) => event.time <= currentTime)
+    .at(-1) ?? null;
   const activePackets = activeQueuePoint?.packets ?? 0;
-  const queueUtilization = clamp((activePackets / Math.max(queueCapacity, 1)) * 100, 0, 100);
-  const currentTime = activeQueuePoint?.time ?? 0;
-
-  const nearestSojourn = useMemo(() => {
-    if (!sojournEvents.length || !activeQueuePoint) {
-      return null;
-    }
-
-    let best = sojournEvents[0];
-    let bestDiff = Math.abs(sojournEvents[0].time - activeQueuePoint.time);
-
-    for (const event of sojournEvents) {
-      const diff = Math.abs(event.time - activeQueuePoint.time);
-      if (diff < bestDiff) {
-        best = event;
-        bestDiff = diff;
-      }
-    }
-
-    return best;
-  }, [sojournEvents, activeQueuePoint]);
 
   const recentDrop = useMemo(() => {
     if (!dropEvents.length || !activeQueuePoint) {
@@ -285,18 +621,38 @@ export default function Home() {
   }, [dropEvents, activeQueuePoint]);
 
   const packetMotions = useMemo(() => {
-    if (!fastLink || !bottleneckLink) {
+    if (!ingressLink || !bottleneckLink) {
       return [];
     }
 
+    const ingressTravelSeconds = estimateTravelSeconds(ingressLink, 0.08);
+    const bottleneckTravelSeconds = estimateTravelSeconds(bottleneckLink, 0.12);
+    const egressTravelSeconds = estimateTravelSeconds(egressLink, 0.08);
+
     return buildPacketMotions(
       queueEvents,
+      arrivalEvents,
       dequeueEvents,
-      boundedPlayIndex,
-      fastLink.linkId,
-      bottleneckLink.linkId
+      currentTime,
+      ingressLink.linkId,
+      bottleneckLink.linkId,
+      egressLink?.linkId ?? null,
+      activePackets,
+      ingressTravelSeconds,
+      bottleneckTravelSeconds,
+      egressTravelSeconds
     );
-  }, [queueEvents, dequeueEvents, boundedPlayIndex, fastLink, bottleneckLink]);
+  }, [queueEvents, arrivalEvents, dequeueEvents, currentTime, ingressLink, bottleneckLink, egressLink, activePackets]);
+
+  useEffect(() => {
+    const sendIds = packetMotions
+      .filter((motion) => motion.kind === "send")
+      .map((motion) => motion.id);
+
+    if (sendIds.length === 0) {
+      return;
+    }
+  }, [packetMotions]);
 
   const recentEvents = useMemo(() => {
     if (!activeQueuePoint) {
@@ -346,6 +702,24 @@ export default function Home() {
     return map;
   }, [nodeIds]);
 
+  const nodeDegreeById = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const link of links) {
+      map.set(link.from, (map.get(link.from) ?? 0) + 1);
+      map.set(link.to, (map.get(link.to) ?? 0) + 1);
+    }
+    return map;
+  }, [links]);
+
+  const routerNodeIds = useMemo(() => {
+    return nodeIds.filter((nodeId, index) => {
+      const isFirst = index === 0;
+      const isLast = index === nodeIds.length - 1;
+      const degree = nodeDegreeById.get(nodeId) ?? 0;
+      return degree >= 2 && !isFirst && !isLast;
+    });
+  }, [nodeIds, nodeDegreeById]);
+
   const linkById = useMemo(() => {
     const map = new Map<string, TraceLink>();
     for (const link of links) {
@@ -354,31 +728,119 @@ export default function Home() {
     return map;
   }, [links]);
 
-  const routerNodeId = bottleneckLink?.from ?? 1;
-  const routerPanelLeft = `${nodeLeftById.get(routerNodeId) ?? 50}%`;
+  const routerLinkByNode = useMemo(() => {
+    const map = new Map<number, TraceLink | null>();
 
-  const packetsLost = bottleneckLink?.trace?.metrics?.packetsLost ?? dropEvents.length;
+    for (const nodeId of routerNodeIds) {
+      const connectedLinks = links.filter((link) => link.from === nodeId || link.to === nodeId);
+
+      let best: TraceLink | null = null;
+      let bestScore = Number.NEGATIVE_INFINITY;
+
+      for (const link of connectedLinks) {
+        const queueCount = link.trace?.queueLenChanges?.length ?? 0;
+        const sojournCount = link.trace?.sojournSamples?.length ?? 0;
+        const dropCount = link.trace?.packetDrops?.length ?? 0;
+        const arrivalCount = link.trace?.packetArrivals?.length ?? 0;
+        const dequeueCount = link.trace?.packetDequeues?.length ?? 0;
+        const score = queueCount * 5 + sojournCount * 3 + dropCount * 4 + arrivalCount * 2 + dequeueCount;
+
+        if (score > bestScore) {
+          best = link;
+          bestScore = score;
+        }
+      }
+
+      map.set(nodeId, best ?? connectedLinks[0] ?? null);
+    }
+
+    return map;
+  }, [links, routerNodeIds]);
+
+  const routerPanelStatsByNode = useMemo(() => {
+    const map = new Map<number, RouterPanelStats>();
+    const parsedCapacity = parsePacketCount(trace?.queueSize) ?? 1;
+
+    for (const nodeId of routerNodeIds) {
+      const tracedLink =
+        nodeId === routerNodeId
+          ? bottleneckLink
+          : routerLinkByNode.get(nodeId) ?? null;
+      const queueLenChanges = tracedLink?.trace?.queueLenChanges ?? [];
+      const sojournSamples = tracedLink?.trace?.sojournSamples ?? [];
+      const packetDrops = tracedLink?.trace?.packetDrops ?? [];
+      const packetArrivals = tracedLink?.trace?.packetArrivals ?? [];
+      const packetDequeues = tracedLink?.trace?.packetDequeues ?? [];
+
+      const visibleQueueEvents = queueLenChanges.filter((event) => event.time <= currentTime);
+      const latestQueueEvent = visibleQueueEvents.length > 0 ? visibleQueueEvents[visibleQueueEvents.length - 1] : null;
+      const fallbackPackets = clamp(
+        packetArrivals.filter((event) => event.time <= currentTime).length -
+          packetDequeues.filter((event) => event.time <= currentTime).length -
+          packetDrops.filter((event) => event.time <= currentTime).length,
+        0,
+        Number.MAX_SAFE_INTEGER
+      );
+      const currentPackets = latestQueueEvent?.newPackets ?? fallbackPackets;
+      const queueUtilization = clamp((currentPackets / Math.max(parsedCapacity, 1)) * 100, 0, 100);
+
+      let nearestSojournMs: number | undefined;
+      if (sojournSamples.length > 0) {
+        let best = sojournSamples[0];
+        let bestDiff = Math.abs(best.time - currentTime);
+        for (const sample of sojournSamples) {
+          const diff = Math.abs(sample.time - currentTime);
+          if (diff < bestDiff) {
+            best = sample;
+            bestDiff = diff;
+          }
+        }
+        nearestSojournMs = best.delayMs;
+      }
+
+      const visibleDrops = packetDrops.filter((event) => event.time <= currentTime);
+      const recentDropForNode = visibleDrops.length > 0 ? visibleDrops[visibleDrops.length - 1] : null;
+      const dropIsActive = Boolean(recentDropForNode && currentTime - recentDropForNode.time < 0.4);
+
+      map.set(nodeId, {
+        hasData:
+          queueLenChanges.length > 0 ||
+          sojournSamples.length > 0 ||
+          packetDrops.length > 0 ||
+          packetArrivals.length > 0 ||
+          packetDequeues.length > 0,
+        currentPackets,
+        queueUtilization,
+        sojournMs: nearestSojournMs,
+        drops: visibleDrops.length,
+        dropIsActive,
+      });
+    }
+
+    return map;
+  }, [routerNodeIds, routerLinkByNode, currentTime, trace?.queueSize, bottleneckLink, routerNodeId]);
+
   const dropIsActive = Boolean(recentDrop && currentTime - recentDrop.time < 0.4);
 
   useEffect(() => {
-    if (!isPlaying || queueEvents.length === 0) {
+    if (!isPlaying || bottleneckTimeline.length === 0) {
       return;
     }
 
     const timer = window.setInterval(function () {
       setPlayIndex(function (prev) {
-        if (prev >= queueEvents.length - 1) {
+        if (prev >= bottleneckTimeline.length - 1) {
           setIsPlaying(false);
           return prev;
         }
         return prev + 1;
       });
-    }, 90);
+    }, 40);
 
     return function cleanup() {
       window.clearInterval(timer);
     };
-  }, [isPlaying, queueEvents.length]);
+  }, [isPlaying, bottleneckTimeline.length]);
 
   useEffect(() => {
     setPlayIndex(0);
@@ -390,35 +852,82 @@ export default function Home() {
     setError(null);
 
     try {
-      const response = await fetch(sourceUrl, { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error(`Could not fetch JSON from ${sourceUrl}`);
-      }
-      const text = await response.text();
-      setTrace(parseTrace(text));
+      const base = sourceUrl.replace(/\/$/, "");
+      const res = await fetch(`${base}/results`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`Backend returned ${res.status} from ${base}/results`);
+
+      const { linkIds, topology } = (await res.json()) as {
+        linkIds: string[];
+        topology: { links: { linkId: string; from: number; to: number; delay: string }[] } | null;
+      };
+
+      if (!linkIds?.length) throw new Error("No CSV results found on backend.");
+
+      const topoLinks: TraceLink[] = topology?.links ?? linkIds.map((id) => {
+        const [from, to] = id.split("-").map(Number);
+        return { linkId: id, from: from ?? 0, to: to ?? 1, rate: "", delay: "" };
+      });
+
+      const links: TraceLink[] = await Promise.all(
+        topoLinks.map(async (link) => {
+          const csvRes = await fetch(`${base}/output/packets_${link.linkId}.csv`, { cache: "no-store" });
+          if (!csvRes.ok) return link;
+          const rows = parseCsv(await csvRes.text());
+          return { ...link, trace: deriveLinkTrace(rows) };
+        })
+      );
+
+      setTrace({ links });
+      setTopologyConfig(null);
     } catch (err) {
       setTrace(null);
-      setError(err instanceof Error ? err.message : "Unknown error while loading trace.");
+      setError(err instanceof Error ? err.message : "Unknown error while loading results.");
     } finally {
       setLoading(false);
     }
   }
 
   async function onFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
+    const files = Array.from(event.target.files ?? []);
+    if (!files.length) return;
 
     setError(null);
     setLoading(true);
 
     try {
-      const text = await file.text();
-      setTrace(parseTrace(text));
+      const jsonFile = files.find((f) => f.name.endsWith(".json"));
+      const csvFiles = files.filter((f) => f.name.endsWith(".csv"));
+
+      if (!csvFiles.length) throw new Error("No CSV files selected. Upload packets_*.csv files.");
+
+      const topology = jsonFile
+        ? (JSON.parse(await jsonFile.text()) as { links: TraceLink[] })
+        : null;
+
+      const csvMap = new Map(
+        await Promise.all(
+          csvFiles.map(async (f) => {
+            const linkId = f.name.replace(/^packets_/, "").replace(/\.csv$/, "");
+            return [linkId, parseCsv(await f.text())] as const;
+          })
+        )
+      );
+
+      const topoLinks: TraceLink[] = topology?.links ?? Array.from(csvMap.keys()).map((id) => {
+        const [from, to] = id.split("-").map(Number);
+        return { linkId: id, from: from ?? 0, to: to ?? 1, rate: "", delay: "" };
+      });
+
+      const links: TraceLink[] = topoLinks.map((link) => {
+        const rows = csvMap.get(link.linkId);
+        return rows ? { ...link, trace: deriveLinkTrace(rows) } : link;
+      });
+
+      setTrace({ links });
+      setTopologyConfig(null);
     } catch (err) {
       setTrace(null);
-      setError(err instanceof Error ? err.message : "Invalid JSON file.");
+      setError(err instanceof Error ? err.message : "Invalid files.");
     } finally {
       setLoading(false);
       event.target.value = "";
@@ -439,7 +948,7 @@ export default function Home() {
                 value={sourceUrl}
                 onChange={(event) => setSourceUrl(event.target.value)}
                 className="h-11 min-w-[220px] rounded-xl border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-zinc-500"
-                placeholder="/simple.json"
+                placeholder="http://localhost:8000"
               />
               <button
                 onClick={loadFromUrl}
@@ -449,8 +958,8 @@ export default function Home() {
                 {loading ? "Loading..." : "Load"}
               </button>
               <label className="flex h-11 cursor-pointer items-center rounded-xl border border-zinc-700 px-4 text-sm text-zinc-200 hover:bg-zinc-800">
-                Upload
-                <input type="file" accept=".json,application/json" onChange={onFileChange} className="hidden" />
+                Upload CSVs
+                <input type="file" accept=".csv,.json" multiple onChange={onFileChange} className="hidden" />
               </label>
             </div>
             {error ? <p className="mt-3 text-sm text-rose-400">{error}</p> : null}
@@ -499,16 +1008,14 @@ export default function Home() {
                         <div
                           className={`absolute top-[49%] -translate-y-1/2 transition-all duration-150 ${
                             isBottleneck
-                              ? dropIsActive
-                                ? "h-[3px] bg-rose-500 shadow-[0_0_14px_rgba(244,63,94,0.9)] animate-pulse"
-                                : "h-[3px] bg-zinc-700"
+                              ? "h-[3px] bg-zinc-700"
                               : "h-[2px] bg-zinc-700"
                           }`}
                           style={{ left: `${left}%`, width: `${width}%` }}
                         />
 
                         <div className="absolute top-[37%] -translate-x-1/2 text-center" style={{ left: `${labelLeft}%` }}>
-                          <p className="text-xs text-zinc-400">{`${link.rate} / ${link.delay}`}</p>
+                          <p className="text-xs text-zinc-400">{`${link.rate ?? "—"} / ${link.delay}`}</p>
                         </div>
                       </div>
                     );
@@ -516,9 +1023,11 @@ export default function Home() {
 
                   {nodeIds.map((nodeId, index) => {
                     const left = `${nodeLeftById.get(nodeId) ?? 50}%`;
-                    const isRouter = nodeId === routerNodeId;
                     const isFirst = index === 0;
                     const isLast = index === nodeIds.length - 1;
+                    const degree = nodeDegreeById.get(nodeId) ?? 0;
+                    const isRouter = degree >= 2 && !isFirst && !isLast;
+                    const isDropBlinkRouter = isRouter && nodeId === routerNodeId && dropIsActive;
                     const role = isRouter ? "Router" : isFirst ? "Sender" : isLast ? "Server" : "Node";
 
                     return (
@@ -526,7 +1035,9 @@ export default function Home() {
                         <div
                           className={`absolute top-[49%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-900 ${
                             isRouter
-                              ? "h-10 w-10 border border-amber-500/70"
+                              ? isDropBlinkRouter
+                                ? "h-9 w-9 border border-amber-500"
+                                : "h-9 w-9 border border-zinc-300"
                               : "h-8 w-8 border border-zinc-200"
                           }`}
                           style={{ left }}
@@ -548,14 +1059,31 @@ export default function Home() {
 
                     const fromLeft = nodeLeftById.get(motionLink.from) ?? 50;
                     const toLeft = nodeLeftById.get(motionLink.to) ?? 50;
-                    const travel = toLeft - fromLeft;
+                    let visualFrom = fromLeft;
+                    let visualTo = toLeft;
+
+                    // Keep visual motion direction stable regardless of raw link orientation.
+                    if (motion.kind === "send" && motionLink.to !== routerNodeId) {
+                      visualFrom = toLeft;
+                      visualTo = fromLeft;
+                    }
+                    if (motion.kind === "drain" && motionLink.from !== routerNodeId) {
+                      visualFrom = toLeft;
+                      visualTo = fromLeft;
+                    }
+                    if (motion.kind === "egress" && motionLink.from !== bottleneckLink?.to) {
+                      visualFrom = toLeft;
+                      visualTo = fromLeft;
+                    }
+
+                    const travel = visualTo - visualFrom;
                     const baseClasses =
                       motion.kind === "drain"
                         ? "bg-emerald-400 shadow-[0_0_18px_rgba(74,222,128,0.6)]"
-                        : "bg-sky-400 shadow-[0_0_18px_rgba(56,189,248,0.6)]";
+                        : "bg-lime-300 shadow-[0_0_18px_rgba(163,230,53,0.7)]";
 
                     const style = {
-                      left: `${fromLeft + (travel * motion.position) / 100}%`,
+                      left: `${visualFrom + (travel * motion.position) / 100}%`,
                       top: "49%",
                     };
 
@@ -568,23 +1096,32 @@ export default function Home() {
                     );
                   })}
 
-                  <div
-                    className="absolute top-[74%] w-[180px] -translate-x-1/2 rounded-md border border-zinc-700 px-4 py-3"
-                    style={{ left: routerPanelLeft }}
-                  >
-                    <div className="grid grid-cols-2 gap-y-1 text-sm">
-                      <p className="text-zinc-400">Current</p>
-                      <p className="text-right font-semibold text-zinc-100">{activePackets} pkt</p>
-                      <p className="text-zinc-400">Utilization</p>
-                      <p className="text-right font-semibold text-zinc-100">{queueUtilization.toFixed(0)}%</p>
-                      <p className="text-zinc-400">Sojourn</p>
-                      <p className="text-right font-semibold text-zinc-100">{formatMs(nearestSojourn?.delayMs)}</p>
-                      <p className="text-zinc-400">Drops</p>
-                      <p className={`text-right font-semibold ${dropIsActive ? "text-rose-400" : "text-zinc-100"}`}>
-                        {packetsLost}
-                      </p>
-                    </div>
-                  </div>
+                  {routerNodeIds.map((panelNodeId) => {
+                    const panelLeft = `${nodeLeftById.get(panelNodeId) ?? 50}%`;
+                    const stats = routerPanelStatsByNode.get(panelNodeId);
+                    const hasData = stats?.hasData ?? false;
+
+                    return (
+                      <div
+                        key={`router-panel-${panelNodeId}`}
+                        className="absolute top-[74%] w-[180px] -translate-x-1/2 rounded-md border border-zinc-700 px-4 py-3"
+                        style={{ left: panelLeft }}
+                      >
+                        <div className="grid grid-cols-2 gap-y-1 text-sm">
+                          <p className="text-zinc-400">Current</p>
+                          <p className="text-right font-semibold text-zinc-100">{hasData ? `${stats?.currentPackets ?? 0} pkt` : "-"}</p>
+                          <p className="text-zinc-400">Utilization</p>
+                          <p className="text-right font-semibold text-zinc-100">{hasData ? `${(stats?.queueUtilization ?? 0).toFixed(0)}%` : "-"}</p>
+                          <p className="text-zinc-400">Sojourn</p>
+                          <p className="text-right font-semibold text-zinc-100">{hasData ? formatMs(stats?.sojournMs) : "-"}</p>
+                          <p className="text-zinc-400">Drops</p>
+                          <p className={`text-right font-semibold ${stats?.dropIsActive ? "text-amber-500" : "text-zinc-100"}`}>
+                            {hasData ? (stats?.drops ?? 0) : "-"}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -598,7 +1135,7 @@ export default function Home() {
                 <input
                   type="range"
                   min={0}
-                  max={Math.max(queueEvents.length - 1, 0)}
+                  max={Math.max(bottleneckTimeline.length - 1, 0)}
                   step={1}
                   value={boundedPlayIndex}
                   onChange={(event) => {
@@ -606,7 +1143,7 @@ export default function Home() {
                     setPlayIndex(Number.parseInt(event.target.value, 10));
                   }}
                   className="w-full accent-zinc-100"
-                  disabled={queueEvents.length === 0}
+                  disabled={bottleneckTimeline.length === 0}
                 />
               </div>
             </section>
@@ -654,7 +1191,6 @@ export default function Home() {
                             <p className="text-xs font-normal text-zinc-100">{event.type}</p>
                             <p className="font-mono text-xs text-zinc-500">{event.time.toFixed(4)}s</p>
                           </div>
-                          <p className="mt-1 text-xs text-zinc-500">{event.linkId}</p>
                           <p className="mt-2 text-sm text-zinc-400">{summarizeEvent(event)}</p>
                         </div>
                       );

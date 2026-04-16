@@ -8,7 +8,7 @@ type QueueLenChange = {
   newPackets?: number;
 };
 
-type SojournSample = {
+type DelaySample = {
   time: number;
   delayMs?: number;
 };
@@ -35,12 +35,12 @@ type TraceMetrics = {
   maxQueueSize?: number;
   packetsLost?: number;
   packetsQueued?: number;
-  avgSojournTime?: number;
+  avgDelayMs?: number;
 };
 
 type LinkTrace = {
   queueLenChanges?: QueueLenChange[];
-  sojournSamples?: SojournSample[];
+  delaySamples?: DelaySample[];
   packetDrops?: PacketDrop[];
   packetDequeues?: PacketDequeue[];
   packetArrivals?: PacketArrival[];
@@ -72,7 +72,7 @@ type TopologyConfig = {
 
 type TimelineEvent =
   | ({ type: "QUEUE_LEN_CHANGE"; linkId: string } & QueueLenChange)
-  | ({ type: "SOJOURN_TIME"; linkId: string } & SojournSample)
+  | ({ type: "DELAY_SAMPLE"; linkId: string } & DelaySample)
   | ({ type: "PACKET_DROP"; linkId: string } & PacketDrop)
   | ({ type: "PACKET_ARRIVAL"; linkId: string } & PacketArrival)
   | ({ type: "PACKET_DEQUEUE"; linkId: string } & PacketDequeue);
@@ -94,7 +94,7 @@ type RouterPanelStats = {
   hasData: boolean;
   currentPackets: number;
   queueUtilization: number;
-  sojournMs?: number;
+  avgDelayMs?: number;
   drops: number;
   dropIsActive: boolean;
 };
@@ -138,7 +138,7 @@ function deriveLinkTrace(rows: PacketRow[]): LinkTrace {
     size: r.size,
   }));
 
-  const sojournSamples: SojournSample[] = rows.map((r) => ({
+  const delaySamples: DelaySample[] = rows.map((r) => ({
     time: r.dequeueTime,
     delayMs: (r.dequeueTime - r.enqueueTime) * 1000,
   }));
@@ -158,15 +158,15 @@ function deriveLinkTrace(rows: PacketRow[]): LinkTrace {
     queueLenChanges.push({ time: ev.time, oldPackets: old, newPackets: depth });
   }
 
-  const avgSojournTime =
-    sojournSamples.reduce((sum, s) => sum + (s.delayMs ?? 0), 0) / sojournSamples.length;
+  const avgDelayMs =
+    delaySamples.reduce((sum, s) => sum + (s.delayMs ?? 0), 0) / delaySamples.length;
 
   return {
     packetArrivals,
     packetDequeues,
-    sojournSamples,
+    delaySamples,
     queueLenChanges,
-    metrics: { packetsQueued: rows.length, avgSojournTime },
+    metrics: { packetsQueued: rows.length, avgDelayMs },
   };
 }
 
@@ -262,9 +262,9 @@ function flattenTimeline(links: TraceLink[]): TimelineEvent[] {
       });
     }
 
-    for (const event of trace?.sojournSamples ?? []) {
+    for (const event of trace?.delaySamples ?? []) {
       events.push({
-        type: "SOJOURN_TIME",
+        type: "DELAY_SAMPLE",
         linkId: link.linkId,
         ...event,
       });
@@ -309,14 +309,11 @@ function inferBottleneckLink(links: TraceLink[]): TraceLink | null {
   for (const link of links) {
     const queueEvents = link.trace?.queueLenChanges ?? [];
     const drops = link.trace?.packetDrops ?? [];
-    const sojourn = link.trace?.sojournSamples ?? [];
     const rateMbps = parseRateMbps(link.rate) ?? 100;
     const delayMs = parseDelayMs(link.delay) ?? 0;
 
     const peakQueue = queueEvents.reduce((max, event) => Math.max(max, event.newPackets ?? 0), 0);
-    const avgSojourn = sojourn.length > 0
-      ? sojourn.reduce((sum, sample) => sum + (sample.delayMs ?? 0), 0) / sojourn.length
-      : 0;
+    const avgDelay = link.trace?.metrics?.avgDelayMs ?? 0;
 
     // Prioritize links that actually exhibit congestion signs.
     const bottleneckLikeRate = 18 / Math.max(rateMbps, 0.1);
@@ -324,7 +321,7 @@ function inferBottleneckLink(links: TraceLink[]): TraceLink | null {
     const score =
       peakQueue * 3 +
       drops.length * 12 +
-      avgSojourn * 0.08 +
+      avgDelay * 0.08 +
       (queueEvents.length > 0 ? 1 : 0) +
       bottleneckLikeRate +
       bottleneckLikeDelay;
@@ -430,7 +427,7 @@ function summarizeEvent(event: TimelineEvent): string {
   if (event.type === "QUEUE_LEN_CHANGE") {
     return `[${event.linkId}] ${event.oldPackets ?? 0} -> ${event.newPackets ?? 0}`;
   }
-  if (event.type === "SOJOURN_TIME") {
+  if (event.type === "DELAY_SAMPLE") {
     return `[${event.linkId}] ${event.delayMs ?? 0} ms queueing delay`;
   }
   if (event.type === "PACKET_DROP") {
@@ -579,7 +576,7 @@ export default function Home() {
 
     const times = [
       ...(bottleneckLink.trace.queueLenChanges ?? []).map((event) => event.time),
-      ...(bottleneckLink.trace.sojournSamples ?? []).map((event) => event.time),
+      ...(bottleneckLink.trace.delaySamples ?? []).map((event) => event.time),
       ...(bottleneckLink.trace.packetDrops ?? []).map((event) => event.time),
       ...(bottleneckLink.trace.packetDequeues ?? []).map((event) => event.time),
     ];
@@ -739,11 +736,11 @@ export default function Home() {
 
       for (const link of connectedLinks) {
         const queueCount = link.trace?.queueLenChanges?.length ?? 0;
-        const sojournCount = link.trace?.sojournSamples?.length ?? 0;
+        const delayCount = link.trace?.delaySamples?.length ?? 0;
         const dropCount = link.trace?.packetDrops?.length ?? 0;
         const arrivalCount = link.trace?.packetArrivals?.length ?? 0;
         const dequeueCount = link.trace?.packetDequeues?.length ?? 0;
-        const score = queueCount * 5 + sojournCount * 3 + dropCount * 4 + arrivalCount * 2 + dequeueCount;
+        const score = queueCount * 5 + delayCount * 3 + dropCount * 4 + arrivalCount * 2 + dequeueCount;
 
         if (score > bestScore) {
           best = link;
@@ -767,7 +764,7 @@ export default function Home() {
           ? bottleneckLink
           : routerLinkByNode.get(nodeId) ?? null;
       const queueLenChanges = tracedLink?.trace?.queueLenChanges ?? [];
-      const sojournSamples = tracedLink?.trace?.sojournSamples ?? [];
+      const delaySamples = tracedLink?.trace?.delaySamples ?? [];
       const packetDrops = tracedLink?.trace?.packetDrops ?? [];
       const packetArrivals = tracedLink?.trace?.packetArrivals ?? [];
       const packetDequeues = tracedLink?.trace?.packetDequeues ?? [];
@@ -784,19 +781,7 @@ export default function Home() {
       const currentPackets = latestQueueEvent?.newPackets ?? fallbackPackets;
       const queueUtilization = clamp((currentPackets / Math.max(parsedCapacity, 1)) * 100, 0, 100);
 
-      let nearestSojournMs: number | undefined;
-      if (sojournSamples.length > 0) {
-        let best = sojournSamples[0];
-        let bestDiff = Math.abs(best.time - currentTime);
-        for (const sample of sojournSamples) {
-          const diff = Math.abs(sample.time - currentTime);
-          if (diff < bestDiff) {
-            best = sample;
-            bestDiff = diff;
-          }
-        }
-        nearestSojournMs = best.delayMs;
-      }
+      const avgDelayMsVal = tracedLink?.trace?.metrics?.avgDelayMs;
 
       const visibleDrops = packetDrops.filter((event) => event.time <= currentTime);
       const recentDropForNode = visibleDrops.length > 0 ? visibleDrops[visibleDrops.length - 1] : null;
@@ -805,13 +790,13 @@ export default function Home() {
       map.set(nodeId, {
         hasData:
           queueLenChanges.length > 0 ||
-          sojournSamples.length > 0 ||
+          delaySamples.length > 0 ||
           packetDrops.length > 0 ||
           packetArrivals.length > 0 ||
           packetDequeues.length > 0,
         currentPackets,
         queueUtilization,
-        sojournMs: nearestSojournMs,
+        avgDelayMs: avgDelayMsVal,
         drops: visibleDrops.length,
         dropIsActive,
       });
@@ -863,7 +848,7 @@ export default function Home() {
 
       if (!linkIds?.length) throw new Error("No CSV results found on backend.");
 
-      const topoLinks: TraceLink[] = topology?.links ?? linkIds.map((id) => {
+      const topoLinks: TraceLink[] = topology?.links?.map((l) => ({ ...l, rate: "" })) ?? linkIds.map((id) => {
         const [from, to] = id.split("-").map(Number);
         return { linkId: id, from: from ?? 0, to: to ?? 1, rate: "", delay: "" };
       });
@@ -1112,8 +1097,8 @@ export default function Home() {
                           <p className="text-right font-semibold text-zinc-100">{hasData ? `${stats?.currentPackets ?? 0} pkt` : "-"}</p>
                           <p className="text-zinc-400">Utilization</p>
                           <p className="text-right font-semibold text-zinc-100">{hasData ? `${(stats?.queueUtilization ?? 0).toFixed(0)}%` : "-"}</p>
-                          <p className="text-zinc-400">Sojourn</p>
-                          <p className="text-right font-semibold text-zinc-100">{hasData ? formatMs(stats?.sojournMs) : "-"}</p>
+                          <p className="text-zinc-400">Avg Delay</p>
+                          <p className="text-right font-semibold text-zinc-100">{hasData ? formatMs(stats?.avgDelayMs) : "-"}</p>
                           <p className="text-zinc-400">Drops</p>
                           <p className={`text-right font-semibold ${stats?.dropIsActive ? "text-amber-500" : "text-zinc-100"}`}>
                             {hasData ? (stats?.drops ?? 0) : "-"}

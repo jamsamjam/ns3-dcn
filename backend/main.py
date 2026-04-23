@@ -1,16 +1,17 @@
-import json
-import threading
-import uuid
-from pathlib import Path
-from typing import List
-
-import subprocess
-
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-
 from pydantic import BaseModel
+from pathlib import Path
+import subprocess
+
+
+class RunRequest(BaseModel):
+    k: int = 4
+    queueSize: int = 100
+    rate: str = "5Mbps"
+    tcp: str = "ns3::TcpNewReno"
+
 
 app = FastAPI()
 
@@ -27,69 +28,48 @@ output_path.mkdir(exist_ok=True)
 
 app.mount("/output", StaticFiles(directory=output_path), name="output")
 
-jobs: dict[str, dict] = {}
-jobs_lock = threading.Lock()
+
+def build_run_tag(req: RunRequest) -> str:
+    tcp_variant = req.tcp.split("::")[-1]
+    return f"k{req.k}_q{req.queueSize}p_r{req.rate}_tcp{tcp_variant}"
 
 
-class RunRequest(BaseModel):
-    config: str = "scratch/config/simple-topology.json"
-    queueSize: int = 100
-    rate: str = "5Mbps"
-    tcp: str = "ns3::TcpNewReno"
-    linkRates: List[str] = []
-    time: float = 10.0
+def get_link_ids(run_tag: str) -> list[str]:
+    run_dir = output_path / run_tag
+    if not run_dir.exists():
+        raise HTTPException(status_code=404, detail=f"Run '{run_tag}' not found.")
+
+    csv_files = sorted(run_dir.glob("packets_*.csv"))
+    return [f.stem.replace("packets_", "") for f in csv_files]
 
 
 @app.post("/run")
 def run(req: RunRequest):
-    job_id = str(uuid.uuid4())
+    run_tag = build_run_tag(req)
+    run_dir = output_path / run_tag
 
-    with jobs_lock:
-        jobs[job_id] = {"status": "running"}
+    if not run_dir.exists():
+        args = [
+            "./ns3", "run", "scratch/DCN", "--",
+            f"--k={req.k}",
+            f"--queueSize={req.queueSize}p",
+            f"--rate={req.rate}",
+            f"--tcp={req.tcp}",
+        ]
 
-    def do_run():
         try:
-            args = [
-                "./ns3", "run", "simple", "--",
-                f"--config={req.config}",
-                f"--queueSize={req.queueSize}p",
-                f"--rate={req.rate}",
-                f"--tcp={req.tcp}",
-                f"--time={req.time}",
-            ]
-            if req.linkRates:
-                args.append(f"--linkRates={','.join(req.linkRates)}")
-
             subprocess.run(args, cwd=ns3_path, check=True)
-
-            with jobs_lock:
-                jobs[job_id]["status"] = "done"
         except subprocess.CalledProcessError as e:
-            with jobs_lock:
-                jobs[job_id]["status"] = "error"
-                jobs[job_id]["error"] = str(e)
+            raise HTTPException(status_code=500, detail=f"ns-3 run failed: {e}")
 
-    threading.Thread(target=do_run, daemon=True).start()
-    return {"jobId": job_id}
-
-
-@app.get("/status/{job_id}")
-def get_status(job_id: str):
-    with jobs_lock:
-        job = jobs.get(job_id)
-    if not job:
-        return {"status": "not_found"}
-    return job
+    link_ids = get_link_ids(run_tag)
+    return {
+        "runTag": run_tag,
+        "linkIds": link_ids,
+    }
 
 
-@app.get("/results")
-def get_results():
-    csv_files = sorted(output_path.glob("packets_*.csv"))
-    link_ids = [f.stem.replace("packets_", "") for f in csv_files]
-
-    topology = None
-    config_path = ns3_path / "scratch/config/simple-topology.json"
-    if config_path.exists():
-        topology = json.loads(config_path.read_text())
-
-    return {"linkIds": link_ids, "topology": topology}
+@app.get("/results/{run_tag}")
+def get_run_results(run_tag: str):
+    link_ids = get_link_ids(run_tag)
+    return {"runTag": run_tag, "linkIds": link_ids}

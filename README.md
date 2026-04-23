@@ -7,5 +7,5 @@ cd frontend && npm run dev
 
 Then:
 
-frontend athttp://localhost:3000
+frontend at http://localhost:3000
 backend at http://localhost:8000

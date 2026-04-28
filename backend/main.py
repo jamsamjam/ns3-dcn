@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from pathlib import Path
+import csv
 import subprocess
 
 
@@ -73,3 +74,21 @@ def run(req: RunRequest):
 def get_run_results(run_tag: str):
     link_ids = get_link_ids(run_tag)
     return {"runTag": run_tag, "linkIds": link_ids}
+
+
+@app.get("/results/{run_tag}/link/{link_id}")
+def get_link_packets(run_tag: str, link_id: str):
+    csv_path = output_path / run_tag / f"packets_{link_id}.csv"
+    if not csv_path.exists():
+        raise HTTPException(status_code=404, detail=f"Link '{link_id}' not found in run '{run_tag}'.")
+
+    packets = []
+    with open(csv_path, newline="") as f:
+        for row in csv.DictReader(f):
+            packets.append({
+                "id": int(row["id"]),
+                "size": int(row["size"]),
+                "enqueue_time": float(row["enqueue_time"]),
+                "dequeue_time": float(row["dequeue_time"]),
+            })
+    return {"linkId": link_id, "packets": packets}

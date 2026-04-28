@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-type RunResponse = unknown;
+type PacketRow = {
+  id: number;
+  size: number;
+  enqueue_time: number;
+  dequeue_time: number;
+};
+
+type RunResult = { runTag: string; linkIds: string[] };
 
 type Node = {
   id: string;
@@ -12,10 +19,43 @@ type Node = {
   y: number;
 };
 
-type Link = {
-  from: string;
-  to: string;
-};
+type Link = { from: string; to: string };
+
+// Maps C++ numeric node ID → frontend SVG node ID
+function numericToSvgId(num: number, k: number): string {
+  const half = k / 2;
+  const numHosts = (k * k * k) / 4;
+  const numEdge = (k * k) / 2;
+  const numAgg = (k * k) / 2;
+
+  if (num < numHosts) {
+    const p = Math.floor(num / (half * half));
+    const rem = num % (half * half);
+    return `pod-${p}-host-${Math.floor(rem / half)}-${rem % half}`;
+  }
+  if (num < numHosts + numEdge) {
+    const off = num - numHosts;
+    return `pod-${Math.floor(off / half)}-access-${off % half}`;
+  }
+  if (num < numHosts + numEdge + numAgg) {
+    const off = num - numHosts - numEdge;
+    return `pod-${Math.floor(off / half)}-agg-${off % half}`;
+  }
+  return `core-${num - numHosts - numEdge - numAgg}`;
+}
+
+// "4-18" → ["pod-1-host-0-0", "pod-1-access-0"] or null
+function parseLinkSvgIds(
+  linkId: string,
+  k: number
+): [string, string] | null {
+  const parts = linkId.split("-");
+  if (parts.length !== 2) return null;
+  const from = parseInt(parts[0]);
+  const to = parseInt(parts[1]);
+  if (isNaN(from) || isNaN(to)) return null;
+  return [numericToSvgId(from, k), numericToSvgId(to, k)];
+}
 
 function buildFatTree(k: number, startX: number) {
   const nodes: Node[] = [];
@@ -52,15 +92,7 @@ function buildFatTree(k: number, startX: number) {
 
     for (let a = 0; a < half; a++) {
       const aggId = `pod-${p}-agg-${a}`;
-
-      nodes.push({
-        id: aggId,
-        label: `P${p} A${a}`,
-        type: "agg",
-        x: podX + a * 70,
-        y: aggY,
-      });
-
+      nodes.push({ id: aggId, label: `P${p} A${a}`, type: "agg", x: podX + a * 70, y: aggY });
       for (let c = 0; c < half; c++) {
         links.push({ from: aggId, to: `core-${a * half + c}` });
       }
@@ -68,30 +100,13 @@ function buildFatTree(k: number, startX: number) {
 
     for (let e = 0; e < half; e++) {
       const accessId = `pod-${p}-access-${e}`;
-
-      nodes.push({
-        id: accessId,
-        label: `P${p} E${e}`,
-        type: "access",
-        x: podX + e * 70,
-        y: accessY,
-      });
-
+      nodes.push({ id: accessId, label: `P${p} E${e}`, type: "access", x: podX + e * 70, y: accessY });
       for (let a = 0; a < half; a++) {
         links.push({ from: accessId, to: `pod-${p}-agg-${a}` });
       }
-
       for (let h = 0; h < half; h++) {
         const hostId = `pod-${p}-host-${e}-${h}`;
-
-        nodes.push({
-          id: hostId,
-          label: `H${p}.${e}.${h}`,
-          type: "host",
-          x: podX + e * 70 - 18 + h * 36,
-          y: hostY,
-        });
-
+        nodes.push({ id: hostId, label: `H${p}.${e}.${h}`, type: "host", x: podX + e * 70 - 18 + h * 36, y: hostY });
         links.push({ from: hostId, to: accessId });
       }
     }
@@ -107,6 +122,11 @@ function nodeStroke(type: Node["type"]) {
   return "rgb(212, 212, 216)";
 }
 
+// Speed presets: sim-seconds per wall-second
+// 0.001 → 1ms packet visible for ~1s (ultra slow-mo)
+// 0.01  → 1ms packet visible for 100ms (good default)
+const SPEED_PRESETS = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5] as const;
+
 export default function Home() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [linkRate, setLinkRate] = useState("10Mbps");
@@ -114,7 +134,22 @@ export default function Home() {
   const [k, setK] = useState("4");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<RunResponse | null>(null);
+  const [runResult, setRunResult] = useState<RunResult | null>(null);
+
+  const [packets, setPackets] = useState<Record<string, PacketRow[]>>({});
+  const [fetchingPackets, setFetchingPackets] = useState(false);
+
+  const [animTime, setAnimTime] = useState(0);
+  const [animating, setAnimating] = useState(false);
+  const [simSpeed, setSimSpeed] = useState(0.01);
+
+  function updateSpeed(v: number) {
+    simSpeedRef.current = v;
+    setSimSpeed(v);
+  }
+  const animRaf = useRef<number | null>(null);
+  const animStartSim = useRef(0);
+  const simSpeedRef = useRef(0.01);
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
@@ -135,24 +170,73 @@ export default function Home() {
   const svgHeight = 500;
   const startX = 80;
 
-  const topology = useMemo(
-    () => buildFatTree(numericK, startX),
-    [numericK, startX]
-  );
-
+  const topology = useMemo(() => buildFatTree(numericK, startX), [numericK, startX]);
   const nodeMap = useMemo(
-    () => new Map(topology.nodes.map((node) => [node.id, node])),
+    () => new Map(topology.nodes.map((n) => [n.id, n])),
     [topology.nodes]
   );
 
-  // stone-700 dark / stone-300 light
-  const lineStroke =
-    theme === "dark" ? "rgb(68, 64, 60)" : "rgb(214, 211, 209)";
+  const lineStroke = theme === "dark" ? "rgb(68, 64, 60)" : "rgb(214, 211, 209)";
+
+  const simEndTime = useMemo(() => {
+    let max = 0;
+    for (const pkts of Object.values(packets)) {
+      for (const p of pkts) if (p.dequeue_time > max) max = p.dequeue_time;
+    }
+    return max > 0 ? max : 10;
+  }, [packets]);
+
+  // rAF loop
+  useEffect(() => {
+    if (!animating) {
+      if (animRaf.current !== null) {
+        cancelAnimationFrame(animRaf.current);
+        animRaf.current = null;
+      }
+      return;
+    }
+
+    const wallStart = performance.now();
+    const simStart = animStartSim.current;
+
+    function frame() {
+      const sim = simStart + ((performance.now() - wallStart) / 1000) * simSpeedRef.current;
+      if (sim >= simEndTime) {
+        setAnimTime(simEndTime);
+        setAnimating(false);
+        return;
+      }
+      setAnimTime(sim);
+      animRaf.current = requestAnimationFrame(frame);
+    }
+
+    animRaf.current = requestAnimationFrame(frame);
+    return () => {
+      if (animRaf.current !== null) {
+        cancelAnimationFrame(animRaf.current);
+        animRaf.current = null;
+      }
+    };
+  }, [animating, simEndTime]);
+
+  function toggleAnim() {
+    if (animating) {
+      setAnimating(false);
+    } else {
+      const resumeFrom = animTime >= simEndTime ? 0 : animTime;
+      animStartSim.current = resumeFrom;
+      setAnimTime(resumeFrom);
+      setAnimating(true);
+    }
+  }
 
   async function runSimulation() {
     setLoading(true);
     setError(null);
-    setResult(null);
+    setRunResult(null);
+    setPackets({});
+    setAnimating(false);
+    setAnimTime(0);
 
     try {
       const res = await fetch("/run", {
@@ -160,17 +244,58 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ linkRate, linkDelay, k: Number(k) }),
       });
-
       if (!res.ok) throw new Error(`Backend Error: ${res.status}`);
+      const data: RunResult = await res.json();
+      setRunResult(data);
 
-      const data = await res.json();
-      setResult(data);
+      setFetchingPackets(true);
+      const fetched: Record<string, PacketRow[]> = {};
+      await Promise.all(
+        data.linkIds.map(async (linkId) => {
+          const r = await fetch(`/results/${data.runTag}/link/${linkId}`);
+          if (r.ok) {
+            const d = await r.json();
+            fetched[linkId] = d.packets;
+          }
+        })
+      );
+      setPackets(fetched);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
+      setFetchingPackets(false);
     }
   }
+
+  // Active packet dots for current animTime
+  const packetDots = useMemo(() => {
+    if (Object.keys(packets).length === 0) return [];
+    const dots: { key: string; x: number; y: number; size: number }[] = [];
+
+    for (const [linkId, pkts] of Object.entries(packets)) {
+      const svgIds = parseLinkSvgIds(linkId, numericK);
+      if (!svgIds) continue;
+      const fromNode = nodeMap.get(svgIds[0]);
+      const toNode = nodeMap.get(svgIds[1]);
+      if (!fromNode || !toNode) continue;
+
+      for (const p of pkts) {
+        if (p.enqueue_time > animTime || p.dequeue_time < animTime) continue;
+        const dur = p.dequeue_time - p.enqueue_time;
+        const progress = dur > 0 ? (animTime - p.enqueue_time) / dur : 0;
+        dots.push({
+          key: `${linkId}-${p.id}`,
+          x: fromNode.x + (toNode.x - fromNode.x) * progress,
+          y: fromNode.y + (toNode.y - fromNode.y) * progress,
+          size: Math.min(Math.max(p.size / 100, 4), 10),
+        });
+      }
+    }
+    return dots;
+  }, [animTime, packets, nodeMap, numericK]);
+
+  const hasPackets = Object.keys(packets).length > 0;
 
   return (
     <>
@@ -179,13 +304,7 @@ export default function Home() {
         className="fixed right-5 top-5 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 bg-white shadow-sm transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:hover:bg-stone-800"
         aria-label="Toggle theme"
       >
-        <img
-          src="/sun.png"
-          alt=""
-          width={20}
-          height={20}
-          className={theme === "dark" ? "invert" : ""}
-        />
+        <img src="/sun.png" alt="" width={20} height={20} className={theme === "dark" ? "invert" : ""} />
       </button>
 
       <main className="min-h-screen bg-stone-100 text-stone-900 dark:bg-stone-950 dark:text-stone-50">
@@ -202,25 +321,22 @@ export default function Home() {
               <div className="flex items-center gap-3">
                 <input
                   value={linkRate}
-                  onChange={(event) => setLinkRate(event.target.value)}
+                  onChange={(e) => setLinkRate(e.target.value)}
                   className="h-11 w-40 rounded-xl border border-stone-300 bg-stone-50 px-3 text-sm text-stone-900 outline-none focus:border-stone-500 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100 dark:focus:border-stone-500"
                   placeholder="10Mbps"
                 />
-
                 <input
                   value={linkDelay}
-                  onChange={(event) => setLinkDelay(event.target.value)}
+                  onChange={(e) => setLinkDelay(e.target.value)}
                   className="h-11 w-32 rounded-xl border border-stone-300 bg-stone-50 px-3 text-sm text-stone-900 outline-none focus:border-stone-500 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100 dark:focus:border-stone-500"
                   placeholder="1ms"
                 />
-
                 <input
                   value={k}
-                  onChange={(event) => setK(event.target.value)}
+                  onChange={(e) => setK(e.target.value)}
                   className="h-11 w-20 rounded-xl border border-stone-300 bg-stone-50 px-3 text-sm text-stone-900 outline-none focus:border-stone-500 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100 dark:focus:border-stone-500"
                   placeholder="k"
                 />
-
                 <button
                   onClick={runSimulation}
                   disabled={loading || Boolean(topology.error)}
@@ -231,107 +347,93 @@ export default function Home() {
               </div>
 
               {topology.error ? (
-                <p className="mt-2 text-sm text-rose-600 dark:text-rose-400">
-                  {topology.error}
-                </p>
+                <p className="mt-2 text-sm text-rose-600 dark:text-rose-400">{topology.error}</p>
               ) : null}
-
               {error ? (
-                <p className="mt-2 text-sm text-rose-600 dark:text-rose-400">
-                  {error}
-                </p>
+                <p className="mt-2 text-sm text-rose-600 dark:text-rose-400">{error}</p>
               ) : null}
-
-              {result ? (
-                <pre className="mt-2 max-h-72 overflow-auto rounded-xl border border-stone-200 bg-stone-50 p-3 text-xs text-stone-800 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-200">
-                  {JSON.stringify(result, null, 2)}
-                </pre>
+              {fetchingPackets ? (
+                <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">Loading packets…</p>
               ) : null}
             </div>
           </header>
 
-          <section className="overflow-auto rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900/40">
+          <section className="relative overflow-auto rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900/40">
+            {/* Legend */}
             <div className="mb-4 flex flex-wrap gap-4 text-xs text-stone-500 dark:text-stone-400">
-              <span>
-                <span
-                  className="mr-2 inline-block h-3 w-3 rounded-full border-2"
-                  style={{ borderColor: nodeStroke("core") }}
-                />
-                Core
-              </span>
-              <span>
-                <span
-                  className="mr-2 inline-block h-3 w-3 rounded-full border-2"
-                  style={{ borderColor: nodeStroke("agg") }}
-                />
-                Aggregate
-              </span>
-              <span>
-                <span
-                  className="mr-2 inline-block h-3 w-3 rounded-full border-2"
-                  style={{ borderColor: nodeStroke("access") }}
-                />
-                Access
-              </span>
-              <span>
-                <span
-                  className="mr-2 inline-block h-3 w-3 rounded-full border-2"
-                  style={{ borderColor: nodeStroke("host") }}
-                />
-                Host
-              </span>
+              {(["core", "agg", "access", "host"] as Node["type"][]).map((t) => (
+                <span key={t}>
+                  <span
+                    className="mr-2 inline-block h-3 w-3 rounded-full border-2"
+                    style={{ borderColor: nodeStroke(t) }}
+                  />
+                  {t === "access" ? "Edge" : t.charAt(0).toUpperCase() + t.slice(1)}
+                </span>
+              ))}
+            </div>
+
+            <div className="absolute right-4 top-4 flex items-center gap-2">
+              {hasPackets && (
+                <span className="font-mono text-xs text-stone-500 dark:text-stone-400">
+                  {animTime.toFixed(3)}s / {simEndTime.toFixed(2)}s
+                </span>
+              )}
+              <select
+                value={simSpeed}
+                onChange={(e) => updateSpeed(Number(e.target.value))}
+                className="h-8 rounded-lg border border-stone-300 bg-stone-50 px-2 text-xs text-stone-700 outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300"
+              >
+                {SPEED_PRESETS.map((s) => (
+                  <option key={s} value={s}>
+                    {s < 1 ? `${s * 1000}ms/s` : `${s}x`}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={toggleAnim}
+                disabled={!hasPackets}
+                className="h-8 px-3 text-xs"
+              >
+                {animating ? "⏸" : animTime > 0 && animTime >= simEndTime ? "↺" : "▶"}
+              </button>
             </div>
 
             <svg width={svgWidth} height={svgHeight} className="mx-auto block">
-              {topology.links.map((link, index) => {
+              {/* Links */}
+              {topology.links.map((link, i) => {
                 const from = nodeMap.get(link.from);
                 const to = nodeMap.get(link.to);
-
                 if (!from || !to) return null;
-
                 return (
                   <line
-                    key={`${link.from}-${link.to}-${index}`}
-                    x1={from.x}
-                    y1={from.y}
-                    x2={to.x}
-                    y2={to.y}
+                    key={`${link.from}-${link.to}-${i}`}
+                    x1={from.x} y1={from.y}
+                    x2={to.x} y2={to.y}
                     stroke={lineStroke}
                     strokeWidth="1"
                   />
                 );
               })}
 
+              {/* Nodes */}
               {topology.nodes.map((node) => {
                 const isHost = node.type === "host";
-
                 return (
                   <g key={node.id}>
                     {isHost ? (
                       <rect
-                        x={node.x - 10}
-                        y={node.y - 8}
-                        width="20"
-                        height="16"
-                        rx="4"
-                        fill="none"
-                        stroke={nodeStroke(node.type)}
-                        strokeWidth="2"
+                        x={node.x - 10} y={node.y - 8}
+                        width="20" height="16" rx="4"
+                        fill="none" stroke={nodeStroke(node.type)} strokeWidth="2"
                       />
                     ) : (
                       <circle
-                        cx={node.x}
-                        cy={node.y}
-                        r="16"
-                        fill="none"
-                        stroke={nodeStroke(node.type)}
-                        strokeWidth="2"
+                        cx={node.x} cy={node.y} r="16"
+                        fill="none" stroke={nodeStroke(node.type)} strokeWidth="2"
                       />
                     )}
-
                     <text
-                      x={node.x}
-                      y={node.y + 31}
+                      x={node.x} y={node.y + 31}
                       textAnchor="middle"
                       className="fill-stone-500 text-[10px] dark:fill-stone-400"
                     >
@@ -340,6 +442,18 @@ export default function Home() {
                   </g>
                 );
               })}
+
+              {/* Packet dots */}
+              {packetDots.map((dot) => (
+                <circle
+                  key={dot.key}
+                  cx={dot.x}
+                  cy={dot.y}
+                  r={dot.size}
+                  fill="rgb(251, 191, 36)"
+                  opacity={0.85}
+                />
+              ))}
             </svg>
           </section>
         </div>

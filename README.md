@@ -6,7 +6,8 @@
 ## Quick Start
 
 ```bash
-cd backend && uv run fastapi dev main.py
+# cd backend && uv run fastapi dev main.py
+cd backend && uv run fastapi run --port 8001
 cd frontend && npm run dev
 ```
 

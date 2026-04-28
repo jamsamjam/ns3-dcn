@@ -5,8 +5,8 @@ import { useState } from "react";
 type RunResponse = unknown;
 
 export default function Home() {
-  const [queueSize, setQueueSize] = useState("100");
-  const [rate, setRate] = useState("5Mbps");
+  const [linkRate, setLinkRate] = useState("10Mbps");
+  const [linkDelay, setLinkDelay] = useState("1ms");
   const [k, setK] = useState("4");
 
   const [loading, setLoading] = useState(false);
@@ -25,8 +25,8 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          queueSize: Number(queueSize),
-          rate,
+          linkRate,
+          linkDelay,
           k: Number(k),
         }),
       });
@@ -50,24 +50,24 @@ export default function Home() {
         <header className="mb-8 flex items-start justify-between gap-6">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-zinc-400">
-              ns-3 visualization
+              ns-3 DCN visualization
             </p>
           </div>
 
           <div className="w-full max-w-xl rounded-2xl p-4">
             <div className="grid gap-3 md:grid-cols-2">
               <input
-                value={queueSize}
-                onChange={(event) => setQueueSize(event.target.value)}
+                value={linkRate}
+                onChange={(event) => setLinkRate(event.target.value)}
                 className="h-11 rounded-xl border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-zinc-500"
-                placeholder="Queue size"
+                placeholder="Link rate (e.g. 10Mbps)"
               />
 
               <input
-                value={rate}
-                onChange={(event) => setRate(event.target.value)}
+                value={linkDelay}
+                onChange={(event) => setLinkDelay(event.target.value)}
                 className="h-11 rounded-xl border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-zinc-500"
-                placeholder="Sending rate"
+                placeholder="Link delay (e.g. 1ms)"
               />
 
               <input

@@ -178,24 +178,27 @@ main(int argc, char* argv[])
 {
     uint32_t k = 4;
     std::string csvBase = "../backend/output";
-    std::string queueSizeStr = "100p";
-    std::string sendingRateStr = "5Mbps";
+    std::string linkRate = "10Mbps";
+    std::string linkDelay = "1ms";
     std::string tcpType = "ns3::TcpNewReno";
-    const std::string linkRate = "10Mbps";
-    const std::string linkDelay = "1ms";
     const double simTime = 10.0;
 
     CommandLine cmd(__FILE__);
     cmd.AddValue("k", "Fat-tree degree (even, e.g. 4 or 8)", k);
-    cmd.AddValue("queueSize", "Max queue size per link", queueSizeStr);
-    cmd.AddValue("rate", "Per-flow application sending rate", sendingRateStr);
+    cmd.AddValue("linkRate", "Link data rate", linkRate);
+    cmd.AddValue("linkDelay", "Link propagation delay", linkDelay);
     cmd.AddValue("tcp", "TCP variant", tcpType);
     cmd.Parse(argc, argv);
 
+    // BDP queue size in bytes
+    uint64_t bdpBytes = static_cast<uint64_t>(DataRate(linkRate).GetBitRate() * Time(linkDelay).GetSeconds() / 8.0);
+    if (bdpBytes < 1) bdpBytes = 1;
+    std::string queueSizeStr = std::to_string(bdpBytes) + "B";
+
     std::string tcpVariant = tcpType.substr(tcpType.rfind(':') + 1);
     std::string runTag = "k" + std::to_string(k)
-        + "_q" + queueSizeStr
-        + "_r" + sendingRateStr
+        + "_d" + linkDelay
+        + "_r" + linkRate
         + "_tcp" + tcpVariant;
     
     for (auto& c : runTag) if (c == '/' || c == ' ') c = '_';
@@ -258,7 +261,6 @@ main(int argc, char* argv[])
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
     // Random permutation traffic: host[i] -> host[perm[i]]
-    // Host h's IP is interfacesByLink[h].GetAddress(0) (host is "from" in its host-edge link).
     Ptr<UniformRandomVariable> rng = CreateObject<UniformRandomVariable>();
     std::vector<uint32_t> perm(topo.numHosts);
     std::iota(perm.begin(), perm.end(), 0);
@@ -289,8 +291,7 @@ main(int argc, char* argv[])
         OnOffHelper onoff("ns3::TcpSocketFactory",
             InetSocketAddress(dstAddr, basePort));
 
-        // Set constant sending rate and packet size
-        onoff.SetConstantRate(DataRate(sendingRateStr), 1024);
+        onoff.SetConstantRate(DataRate(linkRate), 1024);
         onoff.SetAttribute("OnTime",  StringValue("ns3::ConstantRandomVariable[Constant=1]"));
         onoff.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
 

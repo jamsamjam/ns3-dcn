@@ -8,8 +8,8 @@ import subprocess
 
 class RunRequest(BaseModel):
     k: int = 4
-    queueSize: int = 100
-    rate: str = "5Mbps"
+    linkRate: str = "10Mbps"
+    linkDelay: str = "1ms"
     tcp: str = "ns3::TcpNewReno"
 
 
@@ -31,7 +31,7 @@ app.mount("/output", StaticFiles(directory=output_path), name="output")
 
 def build_run_tag(req: RunRequest) -> str:
     tcp_variant = req.tcp.split("::")[-1]
-    return f"k{req.k}_q{req.queueSize}p_r{req.rate}_tcp{tcp_variant}"
+    return f"k{req.k}_d{req.linkDelay}_r{req.linkRate}_tcp{tcp_variant}"
 
 
 def get_link_ids(run_tag: str) -> list[str]:
@@ -52,8 +52,8 @@ def run(req: RunRequest):
         args = [
             "./ns3", "run", "scratch/DCN", "--",
             f"--k={req.k}",
-            f"--queueSize={req.queueSize}p",
-            f"--rate={req.rate}",
+            f"--linkRate={req.linkRate}",
+            f"--linkDelay={req.linkDelay}",
             f"--tcp={req.tcp}",
         ]
 

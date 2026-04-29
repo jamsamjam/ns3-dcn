@@ -233,7 +233,8 @@ main(int argc, char* argv[])
     TrafficControlHelper tch;
     tch.SetRootQueueDisc("ns3::FifoQueueDisc", "MaxSize", StringValue(queueSizeStr));
 
-    std::vector<Ptr<QueueDisc>> qdiscsByLink;
+    struct LinkQdisc { uint32_t from, to; Ptr<QueueDisc> qdisc; };
+    std::vector<LinkQdisc> qdiscsByLink;
     std::vector<Ipv4InterfaceContainer> interfacesByLink;
 
     Ipv4AddressHelper address;
@@ -248,7 +249,8 @@ main(int argc, char* argv[])
 
         NetDeviceContainer devices = p2p.Install(pair);
         QueueDiscContainer qdiscs = tch.Install(devices);
-        qdiscsByLink.push_back(qdiscs.Get(0));
+        qdiscsByLink.push_back({link.from, link.to, qdiscs.Get(0)});
+        qdiscsByLink.push_back({link.to, link.from, qdiscs.Get(1)});
 
         // Addressing: 10.B2.B3.0/24 to support up to ~64k links
         uint32_t byte2 = (uint32_t)(i / 254) + 1;
@@ -310,8 +312,8 @@ main(int argc, char* argv[])
         qdisc->TraceConnectWithoutContext("Dequeue", MakeBoundCallback(&DequeueTrace, linkId));
     };
 
-    for (size_t i = 0; i < links.size(); ++i)
-        connectTraces(qdiscsByLink[i], links[i].id);
+    for (const auto& lq : qdiscsByLink)
+        connectTraces(lq.qdisc, std::to_string(lq.from) + "-" + std::to_string(lq.to));
 
     Simulator::Stop(Seconds(simTime + 1.0)); // to allow processing of last packets
     Simulator::Run();

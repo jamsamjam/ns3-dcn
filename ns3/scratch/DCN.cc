@@ -65,9 +65,42 @@ DropTrace(std::string linkId, Ptr<const QueueDiscItem> item)
     tracesByLink[linkId].metrics.packetsLost++;
 }
 
+static bool
+IsPureAck(Ptr<const QueueDiscItem> item)
+{
+    Ptr<Packet> copy = item->GetPacket()->Copy();
+
+    Ipv4Header ipHeader;
+    if (copy->RemoveHeader(ipHeader) == 0 || ipHeader.GetProtocol() != 6) // 6 = TCP
+    {
+        return false;
+    }
+
+    TcpHeader tcpHeader;
+    if (copy->PeekHeader(tcpHeader) == 0)
+    {
+        return false;
+    }
+
+    uint8_t flags = tcpHeader.GetFlags();
+
+    bool ackOnly =
+        (flags & TcpHeader::ACK) &&
+        !(flags & TcpHeader::SYN) &&
+        !(flags & TcpHeader::FIN) &&
+        !(flags & TcpHeader::RST);
+
+    bool noPayload = copy->GetSize() == tcpHeader.GetSerializedSize();
+
+    return ackOnly && noPayload;
+}
+
 static void
 ArrivalTrace(std::string linkId, Ptr<const QueueDiscItem> item)
 {
+    if (IsPureAck(item))
+        return;
+
     Ptr<const Packet> packet = item->GetPacket();
     PacketArrivalInfo info;
     info.size = packet->GetSize();

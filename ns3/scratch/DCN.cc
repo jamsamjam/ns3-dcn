@@ -262,6 +262,10 @@ main(int argc, char* argv[])
 
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
+    std::vector<Ipv4Address> hostAddr(topo.numHosts);
+    for (uint32_t h = 0; h < topo.numHosts; h++)
+        hostAddr[h] = nodes.Get(h)->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
+
     // Random permutation traffic: host[i] -> host[perm[i]]
     Ptr<UniformRandomVariable> rng = CreateObject<UniformRandomVariable>();
     std::vector<uint32_t> perm(topo.numHosts);
@@ -287,7 +291,7 @@ main(int argc, char* argv[])
         if (dst == h)
             continue;
 
-        Ipv4Address dstAddr = interfacesByLink[dst].GetAddress(0);
+        Ipv4Address dstAddr = hostAddr[dst];
 
         // OnOffHelper: sends at constant rate when on, idle when off
         OnOffHelper onoff("ns3::TcpSocketFactory",

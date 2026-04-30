@@ -21,7 +21,9 @@ type Node = {
 
 type Link = { from: string; to: string };
 
-// Maps C++ numeric node ID → frontend SVG node ID
+type Dot = { key: string; x: number; y: number };
+
+// 3 -> pod-0-host-1-1
 function numericToSvgId(num: number, k: number): string {
   const half = k / 2;
   const numHosts = (k * k * k) / 4;
@@ -44,11 +46,8 @@ function numericToSvgId(num: number, k: number): string {
   return `core-${num - numHosts - numEdge - numAgg}`;
 }
 
-// "4-18" → ["pod-1-host-0-0", "pod-1-access-0"] or null
-function parseLinkSvgIds(
-  linkId: string,
-  k: number
-): [string, string] | null {
+// "12-34" -> [svgId, svgId]
+function parseLinkSvgIds(linkId: string, k: number): [string, string] | null {
   const parts = linkId.split("-");
   if (parts.length !== 2) return null;
   const from = parseInt(parts[0]);
@@ -56,6 +55,49 @@ function parseLinkSvgIds(
   if (isNaN(from) || isNaN(to)) return null;
   return [numericToSvgId(from, k), numericToSvgId(to, k)];
 }
+
+// "pod-0-host-0-0" -> 0
+function svgIdToNumeric(svgId: string, k: number): number {
+  const half = k / 2;
+  const numHosts = (k * k * k) / 4;
+  const numEdge = (k * k) / 2;
+  const numAgg = (k * k) / 2;
+  const core = svgId.match(/^core-(\d+)$/);
+  if (core) return numHosts + numEdge + numAgg + Number(core[1]);
+  const agg = svgId.match(/^pod-(\d+)-agg-(\d+)$/);
+  if (agg) return numHosts + numEdge + Number(agg[1]) * half + Number(agg[2]);
+  const acc = svgId.match(/^pod-(\d+)-access-(\d+)$/);
+  if (acc) return numHosts + Number(acc[1]) * half + Number(acc[2]);
+  const host = svgId.match(/^pod-(\d+)-host-(\d+)-(\d+)$/);
+  if (host) return Number(host[1]) * half * half + Number(host[2]) * half + Number(host[3]);
+  return -1;
+}
+
+function csvIdsForSvgLink(svgFrom: string, svgTo: string, k: number, packets: Record<string, PacketRow[]>): string[] {
+  const a = svgIdToNumeric(svgFrom, k);
+  const b = svgIdToNumeric(svgTo, k);
+  if (a < 0 || b < 0) return [];
+  return [`${a}-${b}`, `${b}-${a}`].filter(id => id in packets);
+}
+
+function parseQueueCapacityBytes(linkRate: string, linkDelay: string): number {
+  const r = linkRate.trim();
+  let bps = 0;
+  if (r.endsWith("Gbps")) bps = parseFloat(r) * 1e9;
+  else if (r.endsWith("Mbps")) bps = parseFloat(r) * 1e6;
+  else if (r.endsWith("Kbps")) bps = parseFloat(r) * 1e3;
+  else bps = parseFloat(r);
+
+  const d = linkDelay.trim();
+  let delayS = 0;
+  if (d.endsWith("ms")) delayS = parseFloat(d) * 1e-3;
+  else if (d.endsWith("us")) delayS = parseFloat(d) * 1e-6;
+  else if (d.endsWith("ns")) delayS = parseFloat(d) * 1e-9;
+  else delayS = parseFloat(d);
+
+  return Math.max(1, Math.floor(bps * delayS / 8));
+}
+
 
 function buildFatTree(k: number, startX: number) {
   const nodes: Node[] = [];
@@ -78,32 +120,20 @@ function buildFatTree(k: number, startX: number) {
   const coreStartX = startX + (podSpan - coreSpan) / 2;
 
   for (let i = 0; i < coreCount; i++) {
-    nodes.push({
-      id: `core-${i}`,
-      label: `C${i}`,
-      type: "core",
-      x: coreStartX + i * 90,
-      y: coreY,
-    });
+    nodes.push({ id: `core-${i}`, label: `C${i}`, type: "core", x: coreStartX + i * 90, y: coreY });
   }
 
   for (let p = 0; p < k; p++) {
     const podX = startX + p * podWidth;
-
     for (let a = 0; a < half; a++) {
       const aggId = `pod-${p}-agg-${a}`;
       nodes.push({ id: aggId, label: `P${p} A${a}`, type: "agg", x: podX + a * 70, y: aggY });
-      for (let c = 0; c < half; c++) {
-        links.push({ from: aggId, to: `core-${a * half + c}` });
-      }
+      for (let c = 0; c < half; c++) links.push({ from: aggId, to: `core-${a * half + c}` });
     }
-
     for (let e = 0; e < half; e++) {
       const accessId = `pod-${p}-access-${e}`;
       nodes.push({ id: accessId, label: `P${p} E${e}`, type: "access", x: podX + e * 70, y: accessY });
-      for (let a = 0; a < half; a++) {
-        links.push({ from: accessId, to: `pod-${p}-agg-${a}` });
-      }
+      for (let a = 0; a < half; a++) links.push({ from: accessId, to: `pod-${p}-agg-${a}` });
       for (let h = 0; h < half; h++) {
         const hostId = `pod-${p}-host-${e}-${h}`;
         nodes.push({ id: hostId, label: `H${p}.${e}.${h}`, type: "host", x: podX + e * 70 - 18 + h * 36, y: hostY });
@@ -122,10 +152,12 @@ function nodeStroke(type: Node["type"]) {
   return "rgb(212, 212, 216)";
 }
 
-// Speed presets: sim-seconds per wall-second
-// 0.001 → 1ms packet visible for ~1s (ultra slow-mo)
-// 0.01  → 1ms packet visible for 100ms (good default)
-const SPEED_PRESETS = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5] as const;
+const SPEED_PRESETS = [0.01, 0.05, 0.1, 0.5, 1, 5] as const;
+
+function queueColor(ratio: number, fallback: string): string {
+  if (ratio > 0.8) return "rgb(255, 86, 86)";
+  return fallback;
+}
 
 export default function Home() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -142,14 +174,16 @@ export default function Home() {
   const [animTime, setAnimTime] = useState(0);
   const [animating, setAnimating] = useState(false);
   const [simSpeed, setSimSpeed] = useState(0.01);
+  const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
 
-  function updateSpeed(v: number) {
-    simSpeedRef.current = v;
-    setSimSpeed(v);
-  }
-  const animRaf = useRef<number | null>(null);
+  const animRaf = useRef<number | null>(null); // x re-render when changed
   const animStartSim = useRef(0);
   const simSpeedRef = useRef(0.01);
+
+  function updateSpeed(v: number) {
+    simSpeedRef.current = v; // for animation loop
+    setSimSpeed(v); // for ui update
+  }
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
@@ -177,46 +211,89 @@ export default function Home() {
   );
 
   const lineStroke = theme === "dark" ? "rgb(68, 64, 60)" : "rgb(214, 211, 209)";
+  const nodeFill = theme === "dark" ? "rgb(28, 25, 23)" : "rgb(255, 255, 255)";
 
   const simEndTime = useMemo(() => {
     let max = 0;
-    for (const pkts of Object.values(packets)) {
+    for (const pkts of Object.values(packets))
       for (const p of pkts) if (p.dequeue_time > max) max = p.dequeue_time;
-    }
     return max > 0 ? max : 10;
   }, [packets]);
 
-  // rAF loop
+  const queueCapacityBytes = useMemo(
+    () => parseQueueCapacityBytes(linkRate, linkDelay),
+    [linkRate, linkDelay]
+  );
+
+  // per-frame: packet dots + current queue depths
+  const { dots: packetDots, depths: linkQueueDepths } = useMemo(() => {
+    const dots: Dot[] = [];
+    const depths: Record<string, number> = {}; // link `string` -> current queue byte
+
+    // most packets have enqueue==dequeue -> give each a minimum visual window
+    // 1/500 of total sim time = several frames at most speeds
+    const minVisualDur = simEndTime / 500;
+
+    for (const [linkId, pkts] of Object.entries(packets)) {
+      const ids = parseLinkSvgIds(linkId, numericK);
+      const fromNode = ids ? nodeMap.get(ids[0]) : null;
+      const toNode = ids ? nodeMap.get(ids[1]) : null;
+      let depth = 0;
+
+      for (const p of pkts) {
+        const visEnd = Math.max(p.dequeue_time, p.enqueue_time + minVisualDur);
+        if (p.enqueue_time <= animTime && visEnd >= animTime) {
+          depth += p.size;
+          if (fromNode && toNode) {
+            const dur = Math.max(p.dequeue_time - p.enqueue_time, minVisualDur);
+            const progress = Math.min((animTime - p.enqueue_time) / dur, 1); // 0 if departing, 1 if arriving
+            dots.push({
+              key: `${linkId}-${p.id}`,
+              x: fromNode.x + (toNode.x - fromNode.x) * progress,
+              y: fromNode.y + (toNode.y - fromNode.y) * progress,
+            });
+          }
+        }
+      }
+      depths[linkId] = depth;
+    }
+    return { dots, depths };
+  }, [animTime, packets, nodeMap, numericK, simEndTime]);
+
+  const hasPackets = Object.keys(packets).length > 0;
+
+  const selectedInfo = useMemo(() => {
+    if (!selectedLinkId) return null;
+    const [svgFrom, svgTo] = selectedLinkId.split("|");
+    const csvIds = csvIdsForSvgLink(svgFrom, svgTo, numericK, packets); // add both directions
+    if (csvIds.length === 0) return null;
+    const totalPackets = csvIds.reduce((s, id) => s + (packets[id]?.length ?? 0), 0);
+    const currentBytes = csvIds.reduce((s, id) => s + (linkQueueDepths[id] ?? 0), 0);
+    const capacityBytes = csvIds.length * queueCapacityBytes; // double if bidirection
+    return {
+      label: `${svgFrom} ↔ ${svgTo}`,
+      totalPackets,
+      currentBytes,
+      capacityBytes,
+      ratio: capacityBytes > 0 ? currentBytes / capacityBytes : 0,
+    };
+  }, [selectedLinkId, packets, linkQueueDepths, queueCapacityBytes, numericK]);
+
   useEffect(() => {
     if (!animating) {
-      if (animRaf.current !== null) {
-        cancelAnimationFrame(animRaf.current);
-        animRaf.current = null;
-      }
+      if (animRaf.current !== null) { cancelAnimationFrame(animRaf.current); animRaf.current = null; }
       return;
     }
-
     const wallStart = performance.now();
     const simStart = animStartSim.current;
-
     function frame() {
       const sim = simStart + ((performance.now() - wallStart) / 1000) * simSpeedRef.current;
-      if (sim >= simEndTime) {
-        setAnimTime(simEndTime);
-        setAnimating(false);
-        return;
-      }
+      if (sim >= simEndTime) { setAnimTime(simEndTime); setAnimating(false); return; }
       setAnimTime(sim);
       animRaf.current = requestAnimationFrame(frame);
     }
-
     animRaf.current = requestAnimationFrame(frame);
-    return () => {
-      if (animRaf.current !== null) {
-        cancelAnimationFrame(animRaf.current);
-        animRaf.current = null;
-      }
-    };
+    return () => { if (animRaf.current !== null) { cancelAnimationFrame(animRaf.current); animRaf.current = null; } };
   }, [animating, simEndTime]);
 
   function toggleAnim() {
@@ -231,12 +308,14 @@ export default function Home() {
   }
 
   async function runSimulation() {
+    // initialize exisiting output
     setLoading(true);
     setError(null);
     setRunResult(null);
     setPackets({});
     setAnimating(false);
     setAnimTime(0);
+    setSelectedLinkId(null);
 
     try {
       const res = await fetch("/run", {
@@ -252,7 +331,7 @@ export default function Home() {
       const fetched: Record<string, PacketRow[]> = {};
       await Promise.all(
         data.linkIds.map(async (linkId) => {
-          const r = await fetch(`/results/${data.runTag}/link/${linkId}`);
+          const r = await fetch(`/results/${data.runTag}/link/${linkId}`); // TODO
           if (r.ok) {
             const d = await r.json();
             fetched[linkId] = d.packets;
@@ -268,35 +347,6 @@ export default function Home() {
     }
   }
 
-  // Active packet dots for current animTime
-  const packetDots = useMemo(() => {
-    if (Object.keys(packets).length === 0) return [];
-    const dots: { key: string; x: number; y: number; size: number }[] = [];
-
-    for (const [linkId, pkts] of Object.entries(packets)) {
-      const svgIds = parseLinkSvgIds(linkId, numericK);
-      if (!svgIds) continue;
-      const fromNode = nodeMap.get(svgIds[0]);
-      const toNode = nodeMap.get(svgIds[1]);
-      if (!fromNode || !toNode) continue;
-
-      for (const p of pkts) {
-        if (p.enqueue_time > animTime || p.dequeue_time < animTime) continue;
-        const dur = p.dequeue_time - p.enqueue_time;
-        const progress = dur > 0 ? (animTime - p.enqueue_time) / dur : 0;
-        dots.push({
-          key: `${linkId}-${p.id}`,
-          x: fromNode.x + (toNode.x - fromNode.x) * progress,
-          y: fromNode.y + (toNode.y - fromNode.y) * progress,
-          size: Math.min(Math.max(p.size / 100, 4), 10),
-        });
-      }
-    }
-    return dots;
-  }, [animTime, packets, nodeMap, numericK]);
-
-  const hasPackets = Object.keys(packets).length > 0;
-
   return (
     <>
       <button
@@ -311,82 +361,54 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-6 py-10 md:px-10">
           <header className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-stone-500 dark:text-stone-400">
-                ns-3 visualization
-              </p>
+              <p className="text-sm uppercase tracking-[0.3em] text-stone-500 dark:text-stone-400">ns-3 visualization</p>
               <h1 className="mt-3 text-3xl font-semibold">Fat-Tree Topology</h1>
             </div>
 
             <div className="w-fit rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
               <div className="flex items-center gap-3">
-                <input
-                  value={linkRate}
-                  onChange={(e) => setLinkRate(e.target.value)}
+                <input value={linkRate} onChange={(e) => setLinkRate(e.target.value)}
                   className="h-11 w-40 rounded-xl border border-stone-300 bg-stone-50 px-3 text-sm text-stone-900 outline-none focus:border-stone-500 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100 dark:focus:border-stone-500"
-                  placeholder="10Mbps"
-                />
-                <input
-                  value={linkDelay}
-                  onChange={(e) => setLinkDelay(e.target.value)}
+                  placeholder="10Mbps" />
+                <input value={linkDelay} onChange={(e) => setLinkDelay(e.target.value)}
                   className="h-11 w-32 rounded-xl border border-stone-300 bg-stone-50 px-3 text-sm text-stone-900 outline-none focus:border-stone-500 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100 dark:focus:border-stone-500"
-                  placeholder="1ms"
-                />
-                <input
-                  value={k}
-                  onChange={(e) => setK(e.target.value)}
+                  placeholder="1ms" />
+                <input value={k} onChange={(e) => setK(e.target.value)}
                   className="h-11 w-20 rounded-xl border border-stone-300 bg-stone-50 px-3 text-sm text-stone-900 outline-none focus:border-stone-500 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100 dark:focus:border-stone-500"
-                  placeholder="k"
-                />
-                <button
-                  onClick={runSimulation}
-                  disabled={loading || Boolean(topology.error)}
-                  className="h-11 rounded-xl bg-stone-900 px-4 text-sm font-medium text-stone-50 transition hover:bg-stone-700 disabled:opacity-60 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-                >
+                  placeholder="k" />
+                <button onClick={runSimulation} disabled={loading || Boolean(topology.error)}
+                  className="h-11 rounded-xl bg-stone-900 px-4 text-sm font-medium text-stone-50 transition hover:bg-stone-700 disabled:opacity-60 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200">
                   {loading ? "Running..." : "Run"}
                 </button>
               </div>
 
-              {topology.error ? (
-                <p className="mt-2 text-sm text-rose-600 dark:text-rose-400">{topology.error}</p>
-              ) : null}
-              {error ? (
-                <p className="mt-2 text-sm text-rose-600 dark:text-rose-400">{error}</p>
-              ) : null}
-              {fetchingPackets ? (
-                <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">Loading packets…</p>
-              ) : null}
+              {topology.error && <p className="mt-2 text-sm text-rose-600 dark:text-rose-400">{topology.error}</p>}
+              {error && <p className="mt-2 text-sm text-rose-600 dark:text-rose-400">{error}</p>}
             </div>
           </header>
 
-          <section className="relative overflow-auto rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900/40">
+          <section className="relative overflow-visible rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900/40">
             {/* Legend */}
             <div className="mb-4 flex flex-wrap gap-4 text-xs text-stone-500 dark:text-stone-400">
               {(["core", "agg", "access", "host"] as Node["type"][]).map((t) => (
                 <span key={t}>
-                  <span
-                    className="mr-2 inline-block h-3 w-3 rounded-full border-2"
-                    style={{ borderColor: nodeStroke(t) }}
-                  />
+                  <span className="mr-2 inline-block h-3 w-3 rounded-full border-2" style={{ borderColor: nodeStroke(t) }} />
                   {t === "access" ? "Edge" : t.charAt(0).toUpperCase() + t.slice(1)}
                 </span>
               ))}
             </div>
 
+            {/* Controls — top-right */}
             <div className="absolute right-4 top-4 flex items-center gap-2">
               {hasPackets && (
                 <span className="font-mono text-xs text-stone-500 dark:text-stone-400">
                   {animTime.toFixed(3)}s / {simEndTime.toFixed(2)}s
                 </span>
               )}
-              <select
-                value={simSpeed}
-                onChange={(e) => updateSpeed(Number(e.target.value))}
-                className="h-8 rounded-lg border border-stone-300 bg-stone-50 px-2 text-xs text-stone-700 outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300"
-              >
+              <select value={simSpeed} onChange={(e) => updateSpeed(Number(e.target.value))}
+                className="h-8 rounded-lg border border-stone-300 bg-stone-50 px-2 text-xs text-stone-700 outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300">
                 {SPEED_PRESETS.map((s) => (
-                  <option key={s} value={s}>
-                    {s < 1 ? `${s * 1000}ms/s` : `${s}x`}
-                  </option>
+                  <option key={s} value={s}>{s < 1 ? `${s * 1000}ms/s` : `${s}x`}</option>
                 ))}
               </select>
               <button
@@ -398,64 +420,143 @@ export default function Home() {
               </button>
             </div>
 
-            <svg width={svgWidth} height={svgHeight} className="mx-auto block">
-              {/* Links */}
-              {topology.links.map((link, i) => {
-                const from = nodeMap.get(link.from);
-                const to = nodeMap.get(link.to);
-                if (!from || !to) return null;
-                return (
-                  <line
-                    key={`${link.from}-${link.to}-${i}`}
-                    x1={from.x} y1={from.y}
-                    x2={to.x} y2={to.y}
-                    stroke={lineStroke}
-                    strokeWidth="1"
-                  />
-                );
-              })}
+            {/* Topology SVG */}
+            <div className="overflow-auto">
+              <svg width={svgWidth} height={svgHeight} className="mx-auto block">
+                {/* Links */}
+                {topology.links.map((link, i) => {
+                  const from = nodeMap.get(link.from);
+                  const to = nodeMap.get(link.to);
+                  if (!from || !to) return null;
 
-              {/* Nodes */}
-              {topology.nodes.map((node) => {
-                const isHost = node.type === "host";
-                return (
-                  <g key={node.id}>
-                    {isHost ? (
-                      <rect
-                        x={node.x - 10} y={node.y - 8}
-                        width="20" height="16" rx="4"
-                        fill="none" stroke={nodeStroke(node.type)} strokeWidth="2"
-                      />
-                    ) : (
-                      <circle
-                        cx={node.x} cy={node.y} r="16"
-                        fill="none" stroke={nodeStroke(node.type)} strokeWidth="2"
-                      />
-                    )}
-                    <text
-                      x={node.x} y={node.y + 31}
-                      textAnchor="middle"
-                      className="fill-stone-500 text-[10px] dark:fill-stone-400"
-                    >
-                      {node.label}
-                    </text>
-                  </g>
-                );
-              })}
+                  const linkKey = `${link.from}|${link.to}`;
+                  const csvIds = csvIdsForSvgLink(link.from, link.to, numericK, packets);
+                  const isSelected = selectedLinkId === linkKey;
+                  const depth = csvIds.reduce((s, id) => s + (linkQueueDepths[id] ?? 0), 0);
+                  const capacityBytes = csvIds.length * queueCapacityBytes;
+                  const ratio = hasPackets && capacityBytes > 0 ? depth / capacityBytes : 0;
+                  const isBottleneck = ratio > 0.8;
+                  const stroke = isSelected ? "rgb(99, 102, 241)" : queueColor(ratio, lineStroke);
+                  const strokeWidth = isSelected ? 3 : hasPackets && depth > 0 ? 1 + ratio * 2.5 : 1;
 
-              {/* Packet dots */}
-              {packetDots.map((dot) => (
-                <circle
-                  key={dot.key}
-                  cx={dot.x}
-                  cy={dot.y}
-                  r={dot.size}
-                  fill="rgb(251, 191, 36)"
-                  opacity={0.85}
-                />
-              ))}
-            </svg>
+                  return (
+                    <g key={`${link.from}-${link.to}-${i}`}
+                      style={{ cursor: csvIds.length > 0 ? "pointer" : "default" }}
+                      onClick={() => csvIds.length > 0 && setSelectedLinkId((prev) => prev === linkKey ? null : linkKey)}>
+                      {/* Wide transparent hit area */}
+                      <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke="transparent" strokeWidth={12} />
+                      {/* Visible line */}
+                      <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke={stroke} strokeWidth={strokeWidth}>
+                        {isBottleneck && !isSelected && (
+                          <animate
+                            attributeName="stroke-opacity"
+                            values="1;0.3;1"
+                            dur={isSelected ? "0.8s" : "0.6s"}
+                            repeatCount="indefinite"
+                          />                        
+                        )}
+                      </line>
+                    </g>
+                  );
+                })}
+
+                {/* Packet dots — below nodes */}
+                {packetDots.map((dot) => (
+                  <circle key={dot.key} cx={dot.x} cy={dot.y} r={4}
+                    fill="rgb(210, 217, 255)" />
+                ))}
+
+                {/* Nodes — on top of packets */}
+                {topology.nodes.map((node) => {
+                  const isHost = node.type === "host";
+                  return (
+                    <g key={node.id}>
+                      {isHost ? (
+                        <rect x={node.x - 10} y={node.y - 8} width="20" height="16" rx="4"
+                          fill={nodeFill} stroke={nodeStroke(node.type)} strokeWidth="2" />
+                      ) : (
+                        <circle cx={node.x} cy={node.y} r="16"
+                          fill={nodeFill} stroke={nodeStroke(node.type)} strokeWidth="2" />
+                      )}
+                      <text x={node.x} y={node.y + 31} textAnchor="middle"
+                        className="fill-stone-500 text-[10px] dark:fill-stone-400">
+                        {node.label}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
+
+            {/* Selected link info panel */}
+            {selectedInfo && (
+              <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="truncate font-mono text-xs text-stone-500 dark:text-stone-400">{selectedInfo.label}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <p className="text-sm font-medium">
+                        Queue: <span style={{ color: queueColor(selectedInfo.ratio, lineStroke) }}>{(selectedInfo.currentBytes / 1024).toFixed(1)}KB</span>
+                        <span className="text-stone-400"> / {(selectedInfo.capacityBytes / 1024).toFixed(1)}KB</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right text-xs text-stone-500 dark:text-stone-400">
+                    <p>Total packets</p>
+                    <p className="text-base font-semibold text-stone-800 dark:text-stone-200">{selectedInfo.totalPackets.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="mt-3">
+                  <div className="mb-1 flex justify-between text-xs text-stone-400">
+                    <span>Queue utilization</span>
+                    <span>{(selectedInfo.ratio * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700">
+                    <div
+                      className="h-full rounded-full transition-all duration-75"
+                      style={{
+                        width: `${Math.min(selectedInfo.ratio * 100, 100)}%`,
+                        backgroundColor: queueColor(selectedInfo.ratio, lineStroke),
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
+
+          {/* Playback timeline bar */}
+          {hasPackets && (
+            <div className="mt-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 dark:border-stone-800 dark:bg-stone-900/40">
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1">
+                  <input
+                    type="range"
+                    min={0}
+                    max={simEndTime}
+                    step={simEndTime / 4000}
+                    value={animTime}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      setAnimating(false);
+                      animStartSim.current = v;
+                      setAnimTime(v);
+                    }}
+                    className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-200 accent-stone-700 dark:bg-stone-700 dark:accent-stone-300"
+                    style={{
+                      background: `linear-gradient(to right, ${
+                        theme === "dark" ? "rgb(214,211,209)" : "rgb(41,37,36)"
+                      } ${(animTime / simEndTime) * 100}%, ${
+                        theme === "dark" ? "rgb(68,64,60)" : "rgb(214,211,209)"
+                      } ${(animTime / simEndTime) * 100}%)`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </>

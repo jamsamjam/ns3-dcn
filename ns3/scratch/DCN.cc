@@ -85,8 +85,9 @@ DequeueTrace(std::string linkId, Ptr<const QueueDiscItem> item)
     uint64_t id = packet->GetUid();
     double dequeueTime = Simulator::Now().GetSeconds();
 
-    auto it = trace.arrivals.find(id);
+    auto it = trace.arrivals.find(id); // returns end() if not found
     if (it == trace.arrivals.end() || it->second.logged)
+        // not recorded when enqueued or alreadt logged
         return;
 
     it->second.logged = true;
@@ -103,7 +104,7 @@ struct FatTreeLink
 {
     uint32_t from;
     uint32_t to;
-    std::string id;
+    std::string id; // "from-to"
 };
 
 struct FatTreeTopo
@@ -116,12 +117,12 @@ struct FatTreeTopo
     uint32_t numCore;
     uint32_t total;
 
-    explicit FatTreeTopo(uint32_t k) : k(k), half(k / 2)
+    explicit FatTreeTopo(uint32_t k) : k(k), half(k / 2) // this->x = x;
     {
         numHosts = (k * k * k) / 4;
         numEdge = (k * k) / 2;
         numAgg = (k * k) / 2;
-        numCore = half * half;
+        numCore = half * half; // k^2/4
         total = numHosts + numEdge + numAgg + numCore;
     }
 
@@ -132,7 +133,7 @@ struct FatTreeTopo
 
     uint32_t edgeId(uint32_t pod, uint32_t idx) const
     {
-        return numHosts + pod * half + idx;
+        return numHosts + pod * half + idx; // TODO
     }
 
     uint32_t aggId(uint32_t pod, uint32_t idx) const
@@ -140,7 +141,6 @@ struct FatTreeTopo
         return numHosts + numEdge + pod * half + idx;
     }
 
-    // core group = agg index (0..half-1); idx = 0..half-1 within group
     uint32_t coreId(uint32_t group, uint32_t idx) const
     {
         return numHosts + numEdge + numAgg + group * half + idx;
@@ -148,11 +148,14 @@ struct FatTreeTopo
 
     std::vector<FatTreeLink> buildLinks() const
     {
-        std::vector<FatTreeLink> links;
+        std::vector<FatTreeLink> links; // array that dynamically changes the size
 
         auto edge = [&](uint32_t a, uint32_t b) {
             links.push_back({a, b, std::to_string(a) + "-" + std::to_string(b)});
         };
+
+        // for each pod, we have:
+        // 'half' edge switches, which has 'half' hosts each
 
         for (uint32_t p = 0; p < k; p++)
             for (uint32_t e = 0; e < half; e++)
@@ -190,8 +193,10 @@ main(int argc, char* argv[])
     cmd.AddValue("tcp", "TCP variant", tcpType);
     cmd.Parse(argc, argv);
 
-    // BDP queue size in bytes
-    uint64_t bdpBytes = static_cast<uint64_t>(DataRate(linkRate).GetBitRate() * Time(linkDelay).GetSeconds() / 8.0);
+    // queue size = link capacity (in bits per sec) * round-trip delay time (in sec)
+    // = max amount of data at any given time = data stacked until getting ACK
+    // Note: link capacity (data rate, link bandwidth) != queue size (buffer size) 
+    uint64_t bdpBytes = static_cast<uint64_t>(DataRate(linkRate).GetBitRate() * Time(linkDelay).GetSeconds() / 8.0); // in bytes
     if (bdpBytes < 1) bdpBytes = 1;
     std::string queueSizeStr = std::to_string(bdpBytes) + "B";
 
@@ -231,7 +236,7 @@ main(int argc, char* argv[])
     stack.Install(nodes);
 
     TrafficControlHelper tch;
-    tch.SetRootQueueDisc("ns3::FifoQueueDisc", "MaxSize", StringValue(queueSizeStr));
+    tch.SetRootQueueDisc("ns3::FifoQueueDisc", "MaxSize", StringValue(queueSizeStr)); // TODO
 
     struct LinkQdisc { uint32_t from, to; Ptr<QueueDisc> qdisc; };
     std::vector<LinkQdisc> qdiscsByLink;
@@ -252,7 +257,7 @@ main(int argc, char* argv[])
         qdiscsByLink.push_back({link.from, link.to, qdiscs.Get(0)});
         qdiscsByLink.push_back({link.to, link.from, qdiscs.Get(1)});
 
-        // Addressing: 10.B2.B3.0/24 to support up to ~64k links
+        // Address: 10.byte2.byte3.0/24
         uint32_t byte2 = (uint32_t)(i / 254) + 1;
         uint32_t byte3 = (uint32_t)(i % 254) + 1;
         std::string subnet = "10." + std::to_string(byte2) + "." + std::to_string(byte3) + ".0";
@@ -269,9 +274,11 @@ main(int argc, char* argv[])
     // Random permutation traffic: host[i] -> host[perm[i]]
     Ptr<UniformRandomVariable> rng = CreateObject<UniformRandomVariable>();
     std::vector<uint32_t> perm(topo.numHosts);
-    std::iota(perm.begin(), perm.end(), 0);
+    std::iota(perm.begin(), perm.end(), 0); // perm[i] = i
+
+    // Fisher-Yates shuffle modern algorithm
     for (uint32_t i = topo.numHosts - 1; i > 0; i--)
-    {
+    { 
         uint32_t j = static_cast<uint32_t>(rng->GetValue(0.0, static_cast<double>(i + 1)));
         std::swap(perm[i], perm[j]);
     }
@@ -310,7 +317,7 @@ main(int argc, char* argv[])
     g_csvLogger = &csvLogger;
 
     const auto connectTraces = [&](Ptr<QueueDisc> qdisc, const std::string& linkId) {
-        qdisc->TraceConnectWithoutContext("PacketsInQueue", MakeBoundCallback(&QueueLenTrace, linkId)); // # packets currently stored in the queue
+        qdisc->TraceConnectWithoutContext("PacketsInQueue", MakeBoundCallback(&QueueLenTrace, linkId));
         qdisc->TraceConnectWithoutContext("Drop", MakeBoundCallback(&DropTrace, linkId));
         qdisc->TraceConnectWithoutContext("Enqueue", MakeBoundCallback(&ArrivalTrace, linkId));
         qdisc->TraceConnectWithoutContext("Dequeue", MakeBoundCallback(&DequeueTrace, linkId));

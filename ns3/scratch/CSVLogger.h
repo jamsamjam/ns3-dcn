@@ -11,7 +11,7 @@
 class CsvLogger {
 public:
     using Key = std::string; // "src-dst"
-    using Row = std::tuple<uint64_t, uint32_t, double, double>; // id, size, enqueue_time, dequeue_time
+    using Row = std::tuple<uint64_t, uint32_t, double, double, double>; // id, size, enqueue_time, dequeue_time, arrive_time
 
     CsvLogger(const std::string& dir) : directory(dir) {}
     ~CsvLogger() { CloseAll(); }
@@ -19,12 +19,13 @@ public:
     void Log(const Key& key, const Row& row) {
         auto [file, isNew] = GetFile(key);
         if (isNew) {
-            file << "id,size,enqueue_time,dequeue_time\n";
+            file << "id,size,enqueue_time,dequeue_time,arrive_time\n";
         }
         file << std::get<0>(row) << ','
              << std::get<1>(row) << ','
              << std::get<2>(row) << ','
-             << std::get<3>(row) << '\n';
+             << std::get<3>(row) << ','
+             << std::get<4>(row) << '\n';
     }
 
     void CloseAll() {

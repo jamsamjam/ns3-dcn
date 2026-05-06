@@ -7,6 +7,7 @@ type PacketRow = {
   size: number;
   enqueue_time: number;
   dequeue_time: number;
+  arrive_time: number;
 };
 
 type RunResult = { runTag: string; linkIds: string[] };
@@ -155,7 +156,9 @@ function nodeStroke(type: Node["type"]) {
 const SPEED_PRESETS = [0.01, 0.05, 0.1, 0.5, 1, 5] as const;
 
 function queueColor(ratio: number, fallback: string): string {
-  if (ratio > 0.8) return "rgb(255, 86, 86)";
+  if (ratio > 0.5) return "rgb(72, 66, 229))"
+  else if (ratio > 0.6) return "rgb(97, 93, 217))"
+  else if (ratio > 0.8) return "rgb(42, 34, 255)";
   return fallback;
 }
 
@@ -216,7 +219,7 @@ export default function Home() {
   const simEndTime = useMemo(() => {
     let max = 0;
     for (const pkts of Object.values(packets))
-      for (const p of pkts) if (p.dequeue_time > max) max = p.dequeue_time;
+      for (const p of pkts) if (p.arrive_time > max) max = p.arrive_time;
     return max > 0 ? max : 10;
   }, [packets]);
 
@@ -230,10 +233,6 @@ export default function Home() {
     const dots: Dot[] = [];
     const depths: Record<string, number> = {}; // link `string` -> current queue byte
 
-    // most packets have enqueue==dequeue -> give each a minimum visual window
-    // 1/500 of total sim time = several frames at most speeds
-    const minVisualDur = simEndTime / 500;
-
     for (const [linkId, pkts] of Object.entries(packets)) {
       const ids = parseLinkSvgIds(linkId, numericK);
       const fromNode = ids ? nodeMap.get(ids[0]) : null;
@@ -241,24 +240,24 @@ export default function Home() {
       let depth = 0;
 
       for (const p of pkts) {
-        const visEnd = Math.max(p.dequeue_time, p.enqueue_time + minVisualDur);
-        if (p.enqueue_time <= animTime && visEnd >= animTime) {
+        if (p.enqueue_time <= animTime && p.dequeue_time >= animTime) {
           depth += p.size;
-          if (fromNode && toNode) {
-            const dur = Math.max(p.dequeue_time - p.enqueue_time, minVisualDur);
-            const progress = Math.min((animTime - p.enqueue_time) / dur, 1); // 0 if departing, 1 if arriving
-            dots.push({
-              key: `${linkId}-${p.id}`,
-              x: fromNode.x + (toNode.x - fromNode.x) * progress,
-              y: fromNode.y + (toNode.y - fromNode.y) * progress,
-            });
-          }
+        }
+
+        if (p.dequeue_time <= animTime && p.arrive_time >= animTime && fromNode && toNode) {
+          const dur = p.arrive_time - p.dequeue_time;
+          const progress = Math.min((animTime - p.dequeue_time) / dur, 1);
+          dots.push({
+            key: `${linkId}-${p.id}`,
+            x: fromNode.x + (toNode.x - fromNode.x) * progress,
+            y: fromNode.y + (toNode.y - fromNode.y) * progress,
+          });
         }
       }
       depths[linkId] = depth;
     }
     return { dots, depths };
-  }, [animTime, packets, nodeMap, numericK, simEndTime]);
+  }, [animTime, packets, nodeMap, numericK]);
 
   const hasPackets = Object.keys(packets).length > 0;
 

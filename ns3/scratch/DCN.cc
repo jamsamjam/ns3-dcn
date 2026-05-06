@@ -38,6 +38,8 @@ struct PacketArrivalInfo
 {
     uint32_t size = 0;
     double enqueueTime = 0.0;
+    double dequeueTime = 0.0;
+    double arriveTime = 0.0;
     bool logged = false;
 };
 
@@ -123,14 +125,28 @@ DequeueTrace(std::string linkId, Ptr<const QueueDiscItem> item)
         // not recorded when enqueued or alreadt logged
         return;
 
-    it->second.logged = true;
+    it->second.dequeueTime = dequeueTime;
 
     double sojournMs = (dequeueTime - it->second.enqueueTime) * 1000.0;
     trace.metrics.totalSojournTime += sojournMs;
     trace.metrics.sojournSampleCount++;
-    
+}
+
+static void
+MacRxTrace(std::string linkId, Ptr<const Packet> packet)
+{
+    auto& trace = tracesByLink[linkId];
+    uint64_t id = packet->GetUid();
+    double arriveTime = Simulator::Now().GetSeconds();
+
+    auto it = trace.arrivals.find(id);
+    if (it == trace.arrivals.end() || it->second.logged || it->second.dequeueTime == 0.0)
+        return;
+
+    it->second.logged = true;
+
     if (g_csvLogger != nullptr)
-        g_csvLogger->Log(linkId, CsvLogger::Row{id, it->second.size, it->second.enqueueTime, dequeueTime});
+        g_csvLogger->Log(linkId, CsvLogger::Row{id, it->second.size, it->second.enqueueTime, it->second.dequeueTime, arriveTime});
 }
 
 struct FatTreeLink
@@ -271,7 +287,7 @@ main(int argc, char* argv[])
     TrafficControlHelper tch;
     tch.SetRootQueueDisc("ns3::FifoQueueDisc", "MaxSize", StringValue(queueSizeStr)); // TODO
 
-    struct LinkQdisc { uint32_t from, to; Ptr<QueueDisc> qdisc; };
+    struct LinkQdisc { uint32_t from, to; Ptr<QueueDisc> qdisc; Ptr<NetDevice> rxDevice; };
     std::vector<LinkQdisc> qdiscsByLink;
     std::vector<Ipv4InterfaceContainer> interfacesByLink;
 
@@ -287,8 +303,8 @@ main(int argc, char* argv[])
 
         NetDeviceContainer devices = p2p.Install(pair);
         QueueDiscContainer qdiscs = tch.Install(devices);
-        qdiscsByLink.push_back({link.from, link.to, qdiscs.Get(0)});
-        qdiscsByLink.push_back({link.to, link.from, qdiscs.Get(1)});
+        qdiscsByLink.push_back({link.from, link.to, qdiscs.Get(0), devices.Get(1)});
+        qdiscsByLink.push_back({link.to, link.from, qdiscs.Get(1), devices.Get(0)});
 
         // Address: 10.byte2.byte3.0/24
         uint32_t byte2 = (uint32_t)(i / 254) + 1;
@@ -338,8 +354,8 @@ main(int argc, char* argv[])
             InetSocketAddress(dstAddr, basePort));
 
         onoff.SetConstantRate(DataRate(linkRate), 1024);
-        onoff.SetAttribute("OnTime",  StringValue("ns3::ConstantRandomVariable[Constant=1]"));
-        onoff.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+        onoff.SetAttribute("OnTime",  StringValue("ns3::ExponentialRandomVariable[Mean=0.5]"));
+        onoff.SetAttribute("OffTime", StringValue("ns3::ExponentialRandomVariable[Mean=0.5]"));
 
         ApplicationContainer src = onoff.Install(nodes.Get(h));
         src.Start(Seconds(1.0));
@@ -349,15 +365,16 @@ main(int argc, char* argv[])
     CsvLogger csvLogger(csvDir);
     g_csvLogger = &csvLogger;
 
-    const auto connectTraces = [&](Ptr<QueueDisc> qdisc, const std::string& linkId) {
+    const auto connectTraces = [&](Ptr<QueueDisc> qdisc, Ptr<NetDevice> rxDevice, const std::string& linkId) {
         qdisc->TraceConnectWithoutContext("PacketsInQueue", MakeBoundCallback(&QueueLenTrace, linkId));
         qdisc->TraceConnectWithoutContext("Drop", MakeBoundCallback(&DropTrace, linkId));
         qdisc->TraceConnectWithoutContext("Enqueue", MakeBoundCallback(&ArrivalTrace, linkId));
         qdisc->TraceConnectWithoutContext("Dequeue", MakeBoundCallback(&DequeueTrace, linkId));
+        rxDevice->TraceConnectWithoutContext("MacRx", MakeBoundCallback(&MacRxTrace, linkId));
     };
 
     for (const auto& lq : qdiscsByLink)
-        connectTraces(lq.qdisc, std::to_string(lq.from) + "-" + std::to_string(lq.to));
+        connectTraces(lq.qdisc, lq.rxDevice, std::to_string(lq.from) + "-" + std::to_string(lq.to));
 
     Simulator::Stop(Seconds(simTime + 1.0)); // to allow processing of last packets
     Simulator::Run();

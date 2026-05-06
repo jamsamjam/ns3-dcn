@@ -90,5 +90,6 @@ def get_link_packets(run_tag: str, link_id: str):
                 "size": int(row["size"]),
                 "enqueue_time": float(row["enqueue_time"]),
                 "dequeue_time": float(row["dequeue_time"]),
+                "arrive_time": float(row["arrive_time"]),
             })
     return {"linkId": link_id, "packets": packets}

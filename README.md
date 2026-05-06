@@ -20,8 +20,8 @@ backend at http://localhost:8000
 
 | Layer        | Stack |
 |--------------|------------------|
-| Frontend     | React, Next.js, WebSocket |
-| Backend      | FastAPI , Redis, RQ |
+| Frontend     | React, Next.js |
+| Backend      | FastAPI, RQ |
 | Simulation   | ns-3 |
 | Storage      | AWS |
 

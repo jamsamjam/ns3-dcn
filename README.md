@@ -11,6 +11,11 @@ cd backend && uv run fastapi run --port 8001
 cd frontend && npm run dev
 ```
 
+```bash
+tmux
+./ns3 build -j1
+```
+
 Then:
 
 frontend at http://localhost:3000 \

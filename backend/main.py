@@ -88,8 +88,8 @@ def get_link_packets(run_tag: str, link_id: str):
             packets.append({
                 "id": int(row["id"]),
                 "size": int(row["size"]),
-                "enqueue_time": float(row["enqueue_time"]),
-                "dequeue_time": float(row["dequeue_time"]),
-                "arrive_time": float(row["arrive_time"]),
+                "enqueue_time": int(row["enqueue_time"]) / 1e9,
+                "dequeue_time": int(row["dequeue_time"]) / 1e9,
+                "arrive_time": int(row["arrive_time"]) / 1e9,
             })
     return {"linkId": link_id, "packets": packets}

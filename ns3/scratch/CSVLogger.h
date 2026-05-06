@@ -11,7 +11,7 @@
 class CsvLogger {
 public:
     using Key = std::string; // "src-dst"
-    using Row = std::tuple<uint64_t, uint32_t, double, double, double>; // id, size, enqueue_time, dequeue_time, arrive_time
+    using Row = std::tuple<uint64_t, uint32_t, int64_t, int64_t, int64_t>; // id, size, enqueue_time, dequeue_time, arrive_time
 
     CsvLogger(const std::string& dir) : directory(dir) {}
     ~CsvLogger() { CloseAll(); }

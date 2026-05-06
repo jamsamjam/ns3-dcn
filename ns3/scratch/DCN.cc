@@ -37,9 +37,9 @@ struct QueueMetrics
 struct PacketArrivalInfo
 {
     uint32_t size = 0;
-    double enqueueTime = 0.0;
-    double dequeueTime = 0.0;
-    double arriveTime = 0.0;
+    int64_t enqueueTime = 0;
+    int64_t dequeueTime = 0;
+    int64_t arriveTime = 0;
     bool logged = false;
 };
 
@@ -106,7 +106,7 @@ ArrivalTrace(std::string linkId, Ptr<const QueueDiscItem> item)
     Ptr<const Packet> packet = item->GetPacket();
     PacketArrivalInfo info;
     info.size = packet->GetSize();
-    info.enqueueTime = Simulator::Now().GetSeconds();
+    info.enqueueTime = Simulator::Now().GetNanoSeconds();
 
     // try_emplace: only insert if uid not already present
     tracesByLink[linkId].arrivals.try_emplace(packet->GetUid(), info);
@@ -118,7 +118,7 @@ DequeueTrace(std::string linkId, Ptr<const QueueDiscItem> item)
     Ptr<const Packet> packet = item->GetPacket();
     auto& trace = tracesByLink[linkId];
     uint64_t id = packet->GetUid();
-    double dequeueTime = Simulator::Now().GetSeconds();
+    int64_t dequeueTime = Simulator::Now().GetNanoSeconds();
 
     auto it = trace.arrivals.find(id); // returns end() if not found
     if (it == trace.arrivals.end() || it->second.logged)
@@ -127,7 +127,7 @@ DequeueTrace(std::string linkId, Ptr<const QueueDiscItem> item)
 
     it->second.dequeueTime = dequeueTime;
 
-    double sojournMs = (dequeueTime - it->second.enqueueTime) * 1000.0;
+    double sojournMs = (dequeueTime - it->second.enqueueTime) * 1e-6;
     trace.metrics.totalSojournTime += sojournMs;
     trace.metrics.sojournSampleCount++;
 }
@@ -137,10 +137,10 @@ MacRxTrace(std::string linkId, Ptr<const Packet> packet)
 {
     auto& trace = tracesByLink[linkId];
     uint64_t id = packet->GetUid();
-    double arriveTime = Simulator::Now().GetSeconds();
+    int64_t arriveTime = Simulator::Now().GetNanoSeconds();
 
     auto it = trace.arrivals.find(id);
-    if (it == trace.arrivals.end() || it->second.logged || it->second.dequeueTime == 0.0)
+    if (it == trace.arrivals.end() || it->second.logged || it->second.dequeueTime == 0)
         return;
 
     it->second.logged = true;

@@ -174,7 +174,8 @@ export default function Home() {
 
   const [animTime, setAnimTime] = useState(0);
   const [animating, setAnimating] = useState(false);
-  const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedQueueCsvId, setSelectedQueueCsvId] = useState<string | null>(null);
 
   const animRaf = useRef<number | null>(null);
   const animStartSim = useRef(0);
@@ -253,21 +254,17 @@ export default function Home() {
   const hasPackets = Object.keys(packets).length > 0;
 
   const selectedInfo = useMemo(() => {
-    if (!selectedLinkId) return null;
-    const [svgFrom, svgTo] = selectedLinkId.split("|");
-    const csvIds = csvIdsForSvgLink(svgFrom, svgTo, numericK, packets); // add both directions
-    if (csvIds.length === 0) return null;
-    const totalPackets = csvIds.reduce((s, id) => s + (packets[id]?.length ?? 0), 0);
-    const currentBytes = csvIds.reduce((s, id) => s + (linkQueueDepths[id] ?? 0), 0);
-    const capacityBytes = csvIds.length * queueCapacityBytes; // double if bidirection
-    return {
-      label: `${svgFrom} ↔ ${svgTo}`,
-      totalPackets,
-      currentBytes,
-      capacityBytes,
-      ratio: capacityBytes > 0 ? currentBytes / capacityBytes : 0,
-    };
-  }, [selectedLinkId, packets, linkQueueDepths, queueCapacityBytes, numericK]);
+    if (!selectedQueueCsvId) return null;
+    const pkts = packets[selectedQueueCsvId];
+    if (!pkts) return null;
+    const parts = selectedQueueCsvId.split("-");
+    const fromLabel = nodeMap.get(numericToSvgId(parseInt(parts[0]), numericK))?.label ?? parts[0];
+    const toLabel = nodeMap.get(numericToSvgId(parseInt(parts[1]), numericK))?.label ?? parts[1];
+    const totalPackets = pkts.length;
+    const currentBytes = linkQueueDepths[selectedQueueCsvId] ?? 0;
+    const ratio = queueCapacityBytes > 0 ? currentBytes / queueCapacityBytes : 0;
+    return { label: `${fromLabel} → ${toLabel}`, totalPackets, currentBytes, capacityBytes: queueCapacityBytes, ratio };
+  }, [selectedQueueCsvId, packets, linkQueueDepths, queueCapacityBytes, numericK, nodeMap]);
 
   useEffect(() => {
     if (!animating) {
@@ -305,7 +302,8 @@ export default function Home() {
     setPackets({});
     setAnimating(false);
     setAnimTime(0);
-    setSelectedLinkId(null);
+    setSelectedNodeId(null);
+    setSelectedQueueCsvId(null);
 
     try {
       const res = await fetch("/run", {
@@ -378,7 +376,6 @@ export default function Home() {
           </header>
 
           <section className="relative overflow-visible rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900/40">
-            {/* Legend */}
             <div className="mb-4 flex flex-wrap gap-4 text-xs text-stone-500 dark:text-stone-400">
               {(["core", "agg", "access", "host"] as Node["type"][]).map((t) => (
                 <span key={t}>
@@ -388,7 +385,6 @@ export default function Home() {
               ))}
             </div>
 
-            {/* Controls — top-right */}
             <div className="absolute right-4 top-4 flex items-center gap-2">
               {hasPackets && (
                 <span className="font-mono text-xs text-stone-500 dark:text-stone-400">
@@ -404,57 +400,75 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Topology SVG */}
             <div className="overflow-auto">
               <svg width={svgWidth} height={svgHeight} className="mx-auto block">
-                {/* Links */}
                 {topology.links.map((link, i) => {
                   const from = nodeMap.get(link.from);
                   const to = nodeMap.get(link.to);
                   if (!from || !to) return null;
 
-                  const linkKey = `${link.from}|${link.to}`;
                   const csvIds = csvIdsForSvgLink(link.from, link.to, numericK, packets);
-                  const isSelected = selectedLinkId === linkKey;
                   const depth = csvIds.reduce((s, id) => s + (linkQueueDepths[id] ?? 0), 0);
                   const capacityBytes = csvIds.length * queueCapacityBytes;
                   const ratio = hasPackets && capacityBytes > 0 ? depth / capacityBytes : 0;
                   const isBottleneck = ratio > 0.8;
-                  const stroke = isSelected ? "rgb(99, 102, 241)" : queueColor(ratio, lineStroke);
-                  const strokeWidth = isSelected ? 3 : hasPackets && depth > 0 ? 1 + ratio * 2.5 : 1;
+                  const stroke = queueColor(ratio, lineStroke);
+                  const strokeWidth = hasPackets && depth > 0 ? 1 + ratio * 2.5 : 1;
 
                   return (
-                    <g key={`${link.from}-${link.to}-${i}`}
-                      style={{ cursor: csvIds.length > 0 ? "pointer" : "default" }}
-                      onClick={() => csvIds.length > 0 && setSelectedLinkId((prev) => prev === linkKey ? null : linkKey)}>
-                      {/* Wide transparent hit area */}
-                      <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke="transparent" strokeWidth={12} />
-                      {/* Visible line */}
+                    <g key={`${link.from}-${link.to}-${i}`}>
                       <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke={stroke} strokeWidth={strokeWidth}>
-                        {isBottleneck && !isSelected && (
-                          <animate
-                            attributeName="stroke-opacity"
-                            values="1;0.3;1"
-                            dur={isSelected ? "0.8s" : "0.6s"}
-                            repeatCount="indefinite"
-                          />                        
+                        {isBottleneck && (
+                          <animate attributeName="stroke-opacity" values="1;0.3;1" dur="0.6s" repeatCount="indefinite" />
                         )}
                       </line>
                     </g>
                   );
                 })}
 
-                {/* Packet dots — below nodes */}
                 {packetDots.map((dot) => (
-                  <circle key={dot.key} cx={dot.x} cy={dot.y} r={4}
-                    fill="rgb(210, 217, 255)" />
+                  <circle key={dot.key} cx={dot.x} cy={dot.y} r={4} fill="rgb(210, 217, 255)" />
                 ))}
 
-                {/* Nodes — on top of packets */}
+                {selectedNodeId && (() => {
+                  const fromNode = nodeMap.get(selectedNodeId);
+                  if (!fromNode) return null;
+                  const fromNumeric = svgIdToNumeric(selectedNodeId, numericK);
+                  const neighbors = topology.links
+                    .filter(l => l.from === selectedNodeId || l.to === selectedNodeId)
+                    .map(l => l.from === selectedNodeId ? l.to : l.from);
+                  return neighbors.map(neighborSvgId => {
+                    const toNumeric = svgIdToNumeric(neighborSvgId, numericK);
+                    const csvId = `${fromNumeric}-${toNumeric}`;
+                    const toNode = nodeMap.get(neighborSvgId);
+                    if (!toNode) return null;
+                    const dx = toNode.x - fromNode.x;
+                    const dy = toNode.y - fromNode.y;
+                    const len = Math.sqrt(dx * dx + dy * dy);
+                    const bx = fromNode.x + (dx / len) * 30;
+                    const by = fromNode.y + (dy / len) * 30;
+                    const isSelected = selectedQueueCsvId === csvId;
+                    return (
+                      <rect key={csvId}
+                        x={bx - 7} y={by - 4} width={14} height={8} rx={2}
+                        fill="rgb(220, 229, 124)"
+                        stroke={isSelected ? "white" : "none"} strokeWidth={isSelected ? 1.5 : 0}
+                        style={{ cursor: "pointer" }}
+                        onClick={(e) => { e.stopPropagation(); setSelectedQueueCsvId(prev => prev === csvId ? null : csvId); }}
+                      />
+                    );
+                  });
+                })()}
+
                 {topology.nodes.map((node) => {
                   const isHost = node.type === "host";
                   return (
-                    <g key={node.id}>
+                    <g key={node.id}
+                      style={{ cursor: "pointer" }}
+                      onClick={() => {
+                        setSelectedNodeId(prev => prev === node.id ? null : node.id);
+                        setSelectedQueueCsvId(null);
+                      }}>
                       {isHost ? (
                         <rect x={node.x - 10} y={node.y - 8} width="20" height="16" rx="4"
                           fill={nodeFill} stroke={nodeStroke(node.type)} strokeWidth="2" />
@@ -472,7 +486,6 @@ export default function Home() {
               </svg>
             </div>
 
-            {/* Selected link info panel */}
             {selectedInfo && (
               <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
                 <div className="flex items-start justify-between gap-4">
@@ -491,7 +504,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Progress bar */}
                 <div className="mt-3">
                   <div className="mb-1 flex justify-between text-xs text-stone-400">
                     <span>Queue utilization</span>
@@ -511,7 +523,6 @@ export default function Home() {
             )}
           </section>
 
-          {/* Playback timeline bar */}
           {hasPackets && (
             <div className="mt-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 dark:border-stone-800 dark:bg-stone-900/40">
               <div className="flex items-center gap-3">

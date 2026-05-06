@@ -153,8 +153,6 @@ function nodeStroke(type: Node["type"]) {
   return "rgb(212, 212, 216)";
 }
 
-const SPEED_PRESETS = [0.01, 0.05, 0.1, 0.5, 1, 5] as const;
-
 function queueColor(ratio: number, fallback: string): string {
   if (ratio > 0.5) return "rgb(72, 66, 229))"
   else if (ratio > 0.6) return "rgb(97, 93, 217))"
@@ -176,17 +174,10 @@ export default function Home() {
 
   const [animTime, setAnimTime] = useState(0);
   const [animating, setAnimating] = useState(false);
-  const [simSpeed, setSimSpeed] = useState(0.01);
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
 
-  const animRaf = useRef<number | null>(null); // x re-render when changed
+  const animRaf = useRef<number | null>(null);
   const animStartSim = useRef(0);
-  const simSpeedRef = useRef(0.01);
-
-  function updateSpeed(v: number) {
-    simSpeedRef.current = v; // for animation loop
-    setSimSpeed(v); // for ui update
-  }
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
@@ -286,7 +277,7 @@ export default function Home() {
     const wallStart = performance.now();
     const simStart = animStartSim.current;
     function frame() {
-      const sim = simStart + ((performance.now() - wallStart) / 1000) * simSpeedRef.current;
+      const sim = simStart + (performance.now() - wallStart) / 1000;
       if (sim >= simEndTime) { setAnimTime(simEndTime); setAnimating(false); return; }
       setAnimTime(sim);
       animRaf.current = requestAnimationFrame(frame);
@@ -404,12 +395,6 @@ export default function Home() {
                   {animTime.toFixed(3)}s / {simEndTime.toFixed(2)}s
                 </span>
               )}
-              <select value={simSpeed} onChange={(e) => updateSpeed(Number(e.target.value))}
-                className="h-8 rounded-lg border border-stone-300 bg-stone-50 px-2 text-xs text-stone-700 outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300">
-                {SPEED_PRESETS.map((s) => (
-                  <option key={s} value={s}>{s < 1 ? `${s * 1000}ms/s` : `${s}x`}</option>
-                ))}
-              </select>
               <button
                 onClick={toggleAnim}
                 disabled={!hasPackets}

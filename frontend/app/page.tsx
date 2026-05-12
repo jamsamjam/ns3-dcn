@@ -97,7 +97,7 @@ function parseQueueCapacityBytes(linkRate: string, linkDelay: string): number {
   else delayS = parseFloat(d);
 
   return Math.max(1, Math.floor(bps * delayS / 8));
-}
+} // TODO
 
 
 function buildFatTree(k: number, startX: number) {
@@ -256,15 +256,13 @@ export default function Home() {
   const selectedInfo = useMemo(() => {
     if (!selectedQueueCsvId) return null;
     const pkts = packets[selectedQueueCsvId];
-    if (!pkts) return null;
     const parts = selectedQueueCsvId.split("-");
     const fromLabel = nodeMap.get(numericToSvgId(parseInt(parts[0]), numericK))?.label ?? parts[0];
     const toLabel = nodeMap.get(numericToSvgId(parseInt(parts[1]), numericK))?.label ?? parts[1];
-    const totalPackets = pkts.length;
-    const currentBytes = linkQueueDepths[selectedQueueCsvId] ?? 0;
-    const ratio = queueCapacityBytes > 0 ? currentBytes / queueCapacityBytes : 0;
-    return { label: `${fromLabel} → ${toLabel}`, totalPackets, currentBytes, capacityBytes: queueCapacityBytes, ratio };
-  }, [selectedQueueCsvId, packets, linkQueueDepths, queueCapacityBytes, numericK, nodeMap]);
+    const currentBytes = pkts?.filter(p => p.enqueue_time <= animTime && p.dequeue_time >= animTime).reduce((s, p) => s + p.size, 0) ?? 0;
+    const ratio = currentBytes / queueCapacityBytes;
+    return { label: `${fromLabel} → ${toLabel}`, currentBytes, capacityBytes: queueCapacityBytes, ratio };
+  }, [selectedQueueCsvId, packets, animTime, queueCapacityBytes, numericK, nodeMap]);
 
   useEffect(() => {
     if (!animating) {
@@ -349,7 +347,7 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-6 py-10 md:px-10">
           <header className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-stone-500 dark:text-stone-400">ns-3 visualization</p>
+              <p className="text-sm uppercase tracking-[0.3em] text-stone-500 dark:text-stone-400">ns-3 simulation</p>
               <h1 className="mt-3 text-3xl font-semibold">Fat-Tree Topology</h1>
             </div>
 
@@ -488,34 +486,16 @@ export default function Home() {
 
             {selectedInfo && (
               <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="truncate font-mono text-xs text-stone-500 dark:text-stone-400">{selectedInfo.label}</p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <p className="text-sm font-medium">
-                        Queue: <span style={{ color: queueColor(selectedInfo.ratio, lineStroke) }}>{(selectedInfo.currentBytes / 1024).toFixed(1)}KB</span>
-                        <span className="text-stone-400"> / {(selectedInfo.capacityBytes / 1024).toFixed(1)}KB</span>
-                      </p>
-                    </div>
-                  </div>
-                  <div className="shrink-0 text-right text-xs text-stone-500 dark:text-stone-400">
-                    <p>Total packets</p>
-                    <p className="text-base font-semibold text-stone-800 dark:text-stone-200">{selectedInfo.totalPackets.toLocaleString()}</p>
-                  </div>
-                </div>
-
+                <p className="truncate font-mono text-xs text-stone-500 dark:text-stone-400">{selectedInfo.label}</p>
                 <div className="mt-3">
                   <div className="mb-1 flex justify-between text-xs text-stone-400">
-                    <span>Queue utilization</span>
-                    <span>{(selectedInfo.ratio * 100).toFixed(0)}%</span>
+                    <span>packet size / capacity</span>
+                    <span>{selectedInfo.currentBytes} / {selectedInfo.capacityBytes} B</span>
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700">
                     <div
                       className="h-full rounded-full transition-all duration-75"
-                      style={{
-                        width: `${Math.min(selectedInfo.ratio * 100, 100)}%`,
-                        backgroundColor: queueColor(selectedInfo.ratio, lineStroke),
-                      }}
+                      style={{ width: `${Math.min(selectedInfo.ratio * 100, 100)}%`, backgroundColor: "rgb(220, 229, 124)" }}
                     />
                   </div>
                 </div>

@@ -67,42 +67,9 @@ DropTrace(std::string linkId, Ptr<const QueueDiscItem> item)
     tracesByLink[linkId].metrics.packetsLost++;
 }
 
-static bool
-IsPureAck(Ptr<const QueueDiscItem> item)
-{
-    Ptr<Packet> copy = item->GetPacket()->Copy();
-
-    Ipv4Header ipHeader;
-    if (copy->RemoveHeader(ipHeader) == 0 || ipHeader.GetProtocol() != 6) // 6 = TCP
-    {
-        return false;
-    }
-
-    TcpHeader tcpHeader;
-    if (copy->PeekHeader(tcpHeader) == 0)
-    {
-        return false;
-    }
-
-    uint8_t flags = tcpHeader.GetFlags();
-
-    bool ackOnly =
-        (flags & TcpHeader::ACK) &&
-        !(flags & TcpHeader::SYN) &&
-        !(flags & TcpHeader::FIN) &&
-        !(flags & TcpHeader::RST);
-
-    bool noPayload = copy->GetSize() == tcpHeader.GetSerializedSize();
-
-    return ackOnly && noPayload;
-}
-
 static void
 ArrivalTrace(std::string linkId, Ptr<const QueueDiscItem> item)
 {
-    if (IsPureAck(item))
-        return;
-
     Ptr<const Packet> packet = item->GetPacket();
     PacketArrivalInfo info;
     info.size = packet->GetSize();
@@ -242,10 +209,9 @@ main(int argc, char* argv[])
     cmd.AddValue("tcp", "TCP variant", tcpType);
     cmd.Parse(argc, argv);
 
-    // queue size = link capacity (in bits per sec) * round-trip delay time (in sec)
-    // = max amount of data at any given time = data stacked until getting ACK
-    // Note: link capacity (data rate, link bandwidth) != queue size (buffer size) 
-    uint64_t bdpBytes = static_cast<uint64_t>(DataRate(linkRate).GetBitRate() * Time(linkDelay).GetSeconds() / 8.0); // in bytes
+    // max amount of data at any given time = data stacked until getting ACK
+    // TODO: bdp = linkRate * RTT, where RTT = 2 * linkDelay globally atm
+    uint64_t bdpBytes = static_cast<uint64_t>(DataRate(linkRate).GetBitRate() * Time(linkDelay).GetSeconds() * 2.0 / 8.0);
     if (bdpBytes < 1) bdpBytes = 1;
     std::string queueSizeStr = std::to_string(bdpBytes) + "B";
 
@@ -370,7 +336,7 @@ main(int argc, char* argv[])
         qdisc->TraceConnectWithoutContext("Drop", MakeBoundCallback(&DropTrace, linkId));
         qdisc->TraceConnectWithoutContext("Enqueue", MakeBoundCallback(&ArrivalTrace, linkId));
         qdisc->TraceConnectWithoutContext("Dequeue", MakeBoundCallback(&DequeueTrace, linkId));
-        rxDevice->TraceConnectWithoutContext("MacRx", MakeBoundCallback(&MacRxTrace, linkId));
+        rxDevice->TraceConnectWithoutContext("MacRx", MakeBoundCallback(&MacRxTrace, linkId)); // MacTx
     };
 
     for (const auto& lq : qdiscsByLink)

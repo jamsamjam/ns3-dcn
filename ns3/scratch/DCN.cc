@@ -4,6 +4,7 @@
 #include "ns3/ipv4-global-routing-helper.h"
 #include "ns3/network-module.h"
 #include "ns3/point-to-point-module.h"
+#include "ns3/point-to-point-net-device.h"
 #include "ns3/traffic-control-module.h"
 #include "ns3/tcp-l4-protocol.h"
 
@@ -253,7 +254,13 @@ main(int argc, char* argv[])
     TrafficControlHelper tch;
     tch.SetRootQueueDisc("ns3::FifoQueueDisc", "MaxSize", StringValue(queueSizeStr)); // TODO
 
-    struct LinkQdisc { uint32_t from, to; Ptr<QueueDisc> qdisc; Ptr<NetDevice> rxDevice; };
+    struct LinkQdisc {
+        uint32_t from, to;
+        Ptr<QueueDisc> qdisc;
+        Ptr<NetDevice> txDevice;
+        Ptr<NetDevice> rxDevice;
+    };
+
     std::vector<LinkQdisc> qdiscsByLink;
     std::vector<Ipv4InterfaceContainer> interfacesByLink;
 
@@ -264,13 +271,15 @@ main(int argc, char* argv[])
         NodeContainer pair(nodes.Get(link.from), nodes.Get(link.to));
 
         PointToPointHelper p2p;
+        // set NIC capacity to 1p so we can observe qdisc only
+        p2p.SetQueue("ns3::DropTailQueue", "MaxSize", StringValue("1p"));
         p2p.SetDeviceAttribute("DataRate", StringValue(linkRate));
         p2p.SetChannelAttribute("Delay", StringValue(linkDelay));
 
         NetDeviceContainer devices = p2p.Install(pair);
         QueueDiscContainer qdiscs = tch.Install(devices);
-        qdiscsByLink.push_back({link.from, link.to, qdiscs.Get(0), devices.Get(1)});
-        qdiscsByLink.push_back({link.to, link.from, qdiscs.Get(1), devices.Get(0)});
+        qdiscsByLink.push_back({link.from, link.to, qdiscs.Get(0), devices.Get(0), devices.Get(1)});
+        qdiscsByLink.push_back({link.to, link.from, qdiscs.Get(1), devices.Get(1), devices.Get(0)});
 
         // Address: 10.byte2.byte3.0/24
         uint32_t byte2 = (uint32_t)(i / 254) + 1;
@@ -331,16 +340,23 @@ main(int argc, char* argv[])
     CsvLogger csvLogger(csvDir);
     g_csvLogger = &csvLogger;
 
-    const auto connectTraces = [&](Ptr<QueueDisc> qdisc, Ptr<NetDevice> rxDevice, const std::string& linkId) {
+    const auto connectTraces = [&](Ptr<QueueDisc> qdisc,
+                                    Ptr<NetDevice> txDevice,
+                                    Ptr<NetDevice> rxDevice,
+                                    const std::string& linkId) {
         qdisc->TraceConnectWithoutContext("PacketsInQueue", MakeBoundCallback(&QueueLenTrace, linkId));
         qdisc->TraceConnectWithoutContext("Drop", MakeBoundCallback(&DropTrace, linkId));
         qdisc->TraceConnectWithoutContext("Enqueue", MakeBoundCallback(&ArrivalTrace, linkId));
-        qdisc->TraceConnectWithoutContext("Dequeue", MakeBoundCallback(&DequeueTrace, linkId));
-        rxDevice->TraceConnectWithoutContext("MacRx", MakeBoundCallback(&MacRxTrace, linkId)); // MacTx
+
+        txDevice->GetObject<PointToPointNetDevice>()
+            ->GetQueue()
+            ->TraceConnectWithoutContext("Dequeue", MakeBoundCallback(&DequeueTrace, linkId));
+
+        rxDevice->TraceConnectWithoutContext("MacRx", MakeBoundCallback(&MacRxTrace, linkId));
     };
 
     for (const auto& lq : qdiscsByLink)
-        connectTraces(lq.qdisc, lq.rxDevice, std::to_string(lq.from) + "-" + std::to_string(lq.to));
+        connectTraces(lq.qdisc, lq.txDevice,lq.rxDevice, std::to_string(lq.from) + "-" + std::to_string(lq.to));
 
     Simulator::Stop(Seconds(simTime + 1.0)); // to allow processing of last packets
     Simulator::Run();

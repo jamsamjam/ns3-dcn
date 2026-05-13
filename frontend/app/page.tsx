@@ -231,6 +231,21 @@ export default function Home() {
       const toNode = ids ? nodeMap.get(ids[1]) : null;
       let depth = 0;
 
+      // A -> B: displayed above, A <- B: below
+      let perpX = 0;
+      let perpY = 0;
+      if (fromNode && toNode) {
+        const parts = linkId.split("-");
+        const offsetSign = parseInt(parts[0]) < parseInt(parts[1]) ? 1 : -1;
+        const dx = toNode.x - fromNode.x;
+        const dy = toNode.y - fromNode.y;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        if (len > 0) {
+          perpX = (-dy / len) * offsetSign * 5;
+          perpY = (dx / len) * offsetSign * 5;
+        }
+      }
+
       for (const p of pkts) {
         if (p.enqueue_time <= animTime && p.dequeue_time >= animTime) {
           depth += p.size;
@@ -241,8 +256,8 @@ export default function Home() {
           const progress = Math.min((animTime - p.dequeue_time) / dur, 1);
           dots.push({
             key: `${linkId}-${p.id}`,
-            x: fromNode.x + (toNode.x - fromNode.x) * progress,
-            y: fromNode.y + (toNode.y - fromNode.y) * progress,
+            x: fromNode.x + (toNode.x - fromNode.x) * progress + perpX,
+            y: fromNode.y + (toNode.y - fromNode.y) * progress + perpY,
           });
         }
       }

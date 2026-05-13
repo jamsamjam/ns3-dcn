@@ -81,9 +81,8 @@ ArrivalTrace(std::string linkId, Ptr<const QueueDiscItem> item)
 }
 
 static void
-DequeueTrace(std::string linkId, Ptr<const QueueDiscItem> item)
+DequeueTrace(std::string linkId, Ptr<const Packet> packet)
 {
-    Ptr<const Packet> packet = item->GetPacket();
     auto& trace = tracesByLink[linkId];
     uint64_t id = packet->GetUid();
     int64_t dequeueTime = Simulator::Now().GetNanoSeconds();

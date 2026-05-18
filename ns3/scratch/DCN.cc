@@ -332,7 +332,7 @@ main(int argc, char* argv[])
         onoff.SetAttribute("OffTime", StringValue("ns3::ExponentialRandomVariable[Mean=0.5]"));
 
         ApplicationContainer src = onoff.Install(nodes.Get(h));
-        src.Start(Seconds(1.0));
+        src.Start(Seconds(0.0));
         src.Stop(Seconds(simTime));
     }
 
